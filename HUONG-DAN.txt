@@ -176,6 +176,7 @@ TIKTOK
 - Cách hoạt động: TikTok không mở bảng tin cho app khác, nên Wallplayer mở chính trang TikTok ở chỗ khuất (với
   phiên đăng nhập TikTok của bạn) để đọc danh sách video, và phát từng video bằng trình phát nhúng chính thức
   của TikTok. Nếu TikTok đòi xác minh, bấm "Mở TikTok", làm theo, rồi bấm "Xong".
+- Màn hình phụ hiện cùng video (tắt tiếng) và thông tin của nó.
 - Chọn nền tảng khác để thoát TikTok. Lần mở sau Wallplayer vẫn ở TikTok nếu bạn thoát khi đang ở đó (đứng yên
   cho tới khi bạn bấm phát).
 

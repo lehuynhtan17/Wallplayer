@@ -689,6 +689,7 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 #app.tt #likeBtn,#app.tt #lyrBtn,#app.tt #eyeBtn,#app.tt #listBtn,#app.tt #mvBtn,#app.tt #repBtn{display:none}
 #app.tt #clock{left:19%;top:44%;transform:translate(-50%,-50%) scale(.8)}
 #app.bare #ttStage{opacity:0;pointer-events:none}
+#app.mirror #ttStage,#app.mirror #ttStage *{pointer-events:none}
 #ttCard{position:absolute;left:50%;top:var(--tt-top);width:var(--tt-w);height:var(--tt-h);transform:translateX(-50%);border-radius:1.8rem;overflow:hidden;background:#000;pointer-events:auto;
   box-shadow:0 2.6rem 5rem rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12)}
 #ttFrame,#ttFrame iframe,#ttCover,#ttHit{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -2137,6 +2138,13 @@ const TT = {
     this.errs = 0; this.show(j, d < 0);
   },
   send(type, value = null){ try { this.frame && this.frame.contentWindow.postMessage({type, value, 'x-tiktok-player': true}, '*') } catch(e){} },
+  mirrorShow(c){
+    this.unload(); this.started = false; this.playing = false; const card = $('#ttCard'); card.classList.remove('paused'); card.classList.add('cover');
+    if (c && c.cover) $('#ttCover').src = c.cover; else $('#ttCover').removeAttribute('src');
+    if (!c || !T || PW.low()) return;
+    const f = document.createElement('iframe'); f.allow = 'autoplay; encrypted-media'; f.tabIndex = -1; f.setAttribute('aria-hidden', 'true');
+    f.src = this.src(c.id).replace('autoplay=0', 'autoplay=1') + '&force_muted=1'; $('#ttFrame').appendChild(f); this.frame = f;
+  },
   sendBg(type, value = null){ try { this.bg && this.bg.contentWindow.postMessage({type, value, 'x-tiktok-player': true}, '*') } catch(e){} },
   // a second, muted copy of the video, blurred and enlarged behind everything (not on battery saver)
   ambient(c){
@@ -2160,6 +2168,12 @@ const TT = {
     if (!bg && (!this.frame || e.source !== this.frame.contentWindow)) return;
     let d = e.data; if (typeof d === 'string'){ try { d = JSON.parse(d) } catch(x){ return } }
     if (!d || typeof d.type !== 'string') return;
+    if (MIRROR){   // another display: a silent copy that follows the main window
+      if (d.type === 'onPlayerReady'){ this.ready = true; this.send('mute'); this.send(this.mplay ? 'play' : 'pause') }
+      else if (d.type === 'onStateChange'){ this.ready = true; if (d.value === 1){ this.playing = true; this.started = true } else if (d.value === 2 || d.value === 0) this.playing = false; $('#ttCard').classList.toggle('cover', !this.started) }
+      else if (d.type === 'onCurrentTime' && d.value) this.pos = +d.value.currentTime || 0;
+      return;
+    }
     if (bg){   // the blurred copy follows the real one
       if (d.type === 'onPlayerReady'){ this.sendBg('mute'); if (this.playing) this.sendBg('play') }
       else if (d.type === 'onStateChange' && d.value === 1){ $('#ttAmb').classList.add('on'); if (!this.playing && this.ready) this.sendBg('pause') }
@@ -2214,10 +2228,10 @@ const ago = t => { const s = Date.now() / 1000 - t; if (!(t > 0) || s < 0) retur
 const setHTML = (el, h) => { if (el._h !== h){ el._h = h; el.innerHTML = h } };
 function renderTT(){
   if (!TT.on) return;
-  const c = TT.list[TT.i], acc = S.acc || {};
+  const c = TT.list[TT.i], acc = S.acc || {}, signed = MIRROR ? !!TT.signed : !!acc.tiktok;
   setHTML($('#ttTabs'), `<button class="ttt ${TT.mode === 'foryou' ? 'on' : ''}" data-tt="foryou">For You</button>`
     + (TT.q ? `<button class="ttt ${TT.mode === 'search' ? 'on' : ''}" data-tt="search" title="${esc(TT.q)}">${I.search}<span>${esc(TT.q)}</span></button>` : '')
-    + (T && !acc.tiktok ? `<button class="ttt ghost" data-tt="login" title="Your own For You">Sign in to TikTok</button>` : ''));
+    + (T && !signed ? `<button class="ttt ghost" data-tt="login" title="Your own For You">Sign in to TikTok</button>` : ''));
   setHTML($('#ttNext'), TT.list.slice(TT.i + 1, TT.i + 4).map((n, k) => `<button class="ttn" data-tj="${TT.i + 1 + k}" title="${esc((n.desc || '@' + n.author).slice(0, 80))}">${n.cover ? `<img src="${esc(n.cover)}" alt="" referrerpolicy="no-referrer" loading="lazy">` : ''}</button>`).join(''));
   $('#ttUp').disabled = TT.i <= 0; $('#ttDown').disabled = !TT.list.length;
   const au = S.look.ttAuto !== false; $('#ttAuto').classList.toggle('on', au);
@@ -3625,6 +3639,13 @@ function mirrorSync(force){
   const list = queueList(), qk = list.length + '|' + list.slice(0, 30).map(x => x.title).join('|') + '|' + (t ? t.title : '');
   if (force || qk !== MIR.qk){ MIR.qk = qk; m.queue = list.slice(0, 30).map(x => ({...x, lyrics: undefined})); m.qIdx = list.findIndex(isCurrent) }
   if (force || m.hasTrack || S.lyrSeq !== MIR.lk){ MIR.lk = S.lyrSeq; m.lyr = S.lyr; m.lyrSrc = S.lyrSource }
+  // TikTok: the other displays show the same video (muted), its details and the next ones
+  if (TT.on){
+    const c = TT.list[TT.i] || null, nx = TT.list.slice(TT.i + 1, TT.i + 4), signed = !!(S.acc && S.acc.tiktok);
+    const k = [c && c.id, c && c.liked, c && c.saved, c && c.likes, c && c.saves, nx.map(x => x.id).join(','), TT.mode, TT.q, signed, S.look.ttAuto !== false].join('|');
+    m.tt = {on: true, pos: TT.pos, playing: TT.playing};
+    if (force || k !== MIR.ttk){ MIR.ttk = k; Object.assign(m.tt, {clip: c, next: nx, mode: TT.mode, q: TT.q, signed}) }
+  } else if (force || MIR.ttk !== 'off'){ MIR.ttk = 'off'; m.tt = {on: false} }
   T.event.emit('mirror-state', m).catch(() => {});
 }
 setInterval(() => mirrorSync(false), 500);
@@ -3639,10 +3660,31 @@ function mirrorApply(m){
   if (m.hasTrack) setTrack(m.track || null);
   else if (m.queue){ renderQueue(); renderFlow() }
   if (m.lyr) setLyrics(m.lyr, S.track, m.lyrSrc);
+  if (m.tt) mirrorTT(m.tt);
   app.classList.toggle('clip-mirror', !!m.clip);
   const vid = S.look.bg === 'desktop' && !m.clip ? null : (m.video || null);
   if (vid !== MS.vid){ MS.vid = vid; if (vid) YTV.load([vid], MS.vt); else YTV.stop() }
   renderPlay();
+}
+// TikTok on the main display → the same vertical video here (muted, following the main one)
+function mirrorTT(t){
+  if (!t.on){
+    if (TT.on){ TT.on = false; app.classList.remove('tt'); TT.unload(); TT.list = []; TT.i = -1; $('#ttCover').removeAttribute('src'); S.platform = store.get('platform', 'auto'); renderPlatMenu() }
+    return;
+  }
+  if (!TT.on){ TT.on = true; app.classList.add('tt'); S.platform = 'tiktok'; renderPlatMenu() }
+  if ('clip' in t){
+    TT.mode = t.mode || 'foryou'; TT.q = t.q || ''; TT.signed = !!t.signed;
+    const was = TT.list[0] && TT.list[0].id, id = t.clip && t.clip.id;
+    TT.list = t.clip ? [t.clip, ...(t.next || [])] : []; TT.i = t.clip ? 0 : -1;
+    if (id !== was) TT.mirrorShow(t.clip);
+    renderTT();
+  }
+  TT.mplay = !!t.playing;
+  if (TT.frame && TT.ready){
+    if (t.playing && !TT.playing) TT.send('play'); else if (!t.playing && TT.playing) TT.send('pause');
+    if (Math.abs((TT.pos || 0) - (t.pos || 0)) > 1.2 && Date.now() - TT.bgSync > 3000){ TT.bgSync = Date.now(); TT.send('seekTo', t.pos || 0) }
+  }
 }
 // settings changed in the main window → redraw with them
 function mirrorReload(){

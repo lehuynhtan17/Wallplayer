@@ -167,6 +167,7 @@ TIKTOK
 - How it works: TikTok has no public feed for apps, so Wallplayer opens TikTok's own page out of sight
   (with your TikTok session) to read the list of videos, and plays each video in TikTok's official embed
   player. If TikTok asks for a check, press "Open TikTok", answer it, then "Done".
+- Other displays show the same video (muted) and its details.
 - Pick another platform to leave TikTok. Wallplayer starts again on TikTok if that is where you left it
   (paused until you press play).
 

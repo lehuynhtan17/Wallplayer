@@ -3,6 +3,11 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.9
+
+### Fixed
+- Other displays now follow TikTok too: instead of the playlist they show the same vertical video (muted, in step with the main display), its Like / Save state, the tabs, *Up next* and the video's details. Back to music, they show the playlist again.
+
 ## 1.0.8
 
 ### Changed
