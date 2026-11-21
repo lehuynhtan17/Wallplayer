@@ -6,13 +6,18 @@
 //! player (www.tiktok.com/player/v1/<id>). The page stays muted and paused; it is never closed at
 //! runtime (closing a busy WebView2 window can take the shared engine down), only emptied.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
-use webview2_com::ExecuteScriptCompletedHandler;
+use webview2_com::Microsoft::Web::WebView2::Win32::{
+    ICoreWebView2_2, COREWEBVIEW2_WEB_RESOURCE_CONTEXT, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_IMAGE, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_MEDIA,
+};
+use webview2_com::{ExecuteScriptCompletedHandler, WebResourceRequestedEventHandler};
+use windows_core::{Interface, HSTRING};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_TOOLWINDOW};
 
@@ -20,6 +25,9 @@ const LABEL: &str = "tiktok-feed";
 /// A second off-screen TikTok page, on the video you act on (like, save, comments).
 const ACT: &str = "tiktok-act";
 const OFF: f64 = -32000.0;
+/// The hidden pages load no videos or pictures (only TikTok's lists), so the video you watch gets the
+/// whole connection; off while a page is on screen for TikTok's check (its puzzle is a picture).
+static QUIET: AtomicBool = AtomicBool::new(true);
 
 /// One TikTok video, as the skin needs it.
 #[derive(Serialize, Clone, Debug, Default)]
@@ -112,7 +120,8 @@ const HOOK: &str = r#"(() => {
       try { if (self.__wpu && WANT.test(self.__wpu)) self.addEventListener('load', () => { try { eat(self.__wpu, self.responseType === 'json' ? self.response : self.responseText) } catch(e){} }) } catch(e){}
       return Reflect.apply(t, self, args) }});
   } catch(e){}
-  setInterval(() => { document.querySelectorAll('video,audio').forEach(v => { try { v.muted = true; if (!v.paused) v.pause() } catch(e){} }) }, 500);
+  try { HTMLMediaElement.prototype.play = function(){ try { this.muted = true; this.pause() } catch(e){} return Promise.resolve() } } catch(e){}
+  setInterval(() => { document.querySelectorAll('video,audio').forEach(v => { try { v.muted = true; if (!v.paused) v.pause() } catch(e){} }) }, 2000);
   Object.defineProperty(window, '__wptt', {enumerable: false, value: {
     take(){ const clips = Q.splice(0, Q.length);
       const captcha = [...document.querySelectorAll('[id*="captcha" i],[class*="captcha" i]')].some(e => e.offsetWidth > 150 && e.offsetHeight > 120);
@@ -153,6 +162,33 @@ fn url_for(mode: &str, query: &str) -> String {
     }
 }
 
+/// Answer the hidden page's video and picture requests with nothing (see QUIET).
+fn quiet(w: &WebviewWindow) {
+    let _ = w.with_webview(|wv| unsafe {
+        let Ok(core) = wv.controller().CoreWebView2() else { return };
+        let Ok(env) = core.cast::<ICoreWebView2_2>().and_then(|c| c.Environment()) else { return };
+        for ctx in [COREWEBVIEW2_WEB_RESOURCE_CONTEXT_MEDIA, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_IMAGE] {
+            let _ = core.AddWebResourceRequestedFilter(&HSTRING::from("*"), ctx);
+        }
+        let handler = WebResourceRequestedEventHandler::create(Box::new(move |_sender, args| {
+            let Some(args) = args else { return Ok(()) };
+            if !QUIET.load(Ordering::Relaxed) {
+                return Ok(());
+            }
+            let mut ctx = COREWEBVIEW2_WEB_RESOURCE_CONTEXT::default();
+            args.ResourceContext(&mut ctx)?;
+            if ctx == COREWEBVIEW2_WEB_RESOURCE_CONTEXT_MEDIA || ctx == COREWEBVIEW2_WEB_RESOURCE_CONTEXT_IMAGE {
+                if let Ok(r) = env.CreateWebResourceResponse(None, 204, &HSTRING::from("No Content"), &HSTRING::from("")) {
+                    let _ = args.SetResponse(&r);
+                }
+            }
+            Ok(())
+        }));
+        let mut token = 0i64;
+        let _ = core.add_WebResourceRequested(&handler, &mut token);
+    });
+}
+
 /// Out of sight and out of Alt+Tab, but still "on screen" for TikTok's page so it keeps loading.
 fn tuck(w: &WebviewWindow) {
     let _ = w.set_position(tauri::LogicalPosition::new(OFF, OFF));
@@ -184,10 +220,12 @@ pub fn feed(app: &AppHandle, mode: &str, query: &str) -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
     tuck(&w);
+    quiet(&w);
     let w2 = w.clone();
     w.on_window_event(move |e| {
         if let WindowEvent::CloseRequested { api, .. } = e {
             api.prevent_close();
+            QUIET.store(true, Ordering::Relaxed);
             tuck(&w2);
         }
     });
@@ -220,9 +258,12 @@ pub fn more(app: &AppHandle) {
 pub fn show(app: &AppHandle, on: bool, video: bool) {
     let Some(w) = app.get_webview_window(if video { ACT } else { LABEL }) else { return };
     if on {
+        QUIET.store(false, Ordering::Relaxed);
+        let _ = w.eval("location.reload()");
         let _ = w.center();
         let _ = w.set_focus();
     } else {
+        QUIET.store(true, Ordering::Relaxed);
         tuck(&w);
     }
 }
@@ -342,10 +383,12 @@ async fn item(app: &AppHandle, author: &str, id: &str) -> Result<(), String> {
                 .build()
                 .map_err(|e| e.to_string())?;
             tuck(&w);
+            quiet(&w);
             let w2 = w.clone();
             w.on_window_event(move |e| {
                 if let WindowEvent::CloseRequested { api, .. } = e {
                     api.prevent_close();
+                    QUIET.store(true, Ordering::Relaxed);
                     tuck(&w2);
                 }
             });

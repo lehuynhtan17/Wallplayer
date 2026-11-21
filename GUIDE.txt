@@ -154,7 +154,7 @@ UPDATES (no installer)
 TIKTOK
 - Choose TikTok with the platform button (left of the player bar). The middle of the screen becomes one
   vertical video at a time, like the TikTok app: no playlist, the clock moves to the left, and the
-  video, blurred, lights the whole screen behind it (a still picture on battery saver).
+  video's picture, blurred, lights the whole screen behind it.
 - Next / previous video: scroll the mouse wheel over the video, press ↓ / ↑, or use the ▲ ▼ buttons
   (and ⏮ ⏭ on the player bar). Click the video to pause or play it.
 - Auto scroll (the button under ▼): on, the next video starts when one ends; off, each video loops.
@@ -167,7 +167,7 @@ TIKTOK
 - How it works: TikTok has no public feed for apps, so Wallplayer opens TikTok's own page out of sight
   (with your TikTok session) to read the list of videos, and plays each video in TikTok's official embed
   player. If TikTok asks for a check, press "Open TikTok", answer it, then "Done".
-- Other displays show the same video (muted) and its details.
+- Other displays show the same video (as a still frame) and its details.
 - Pick another platform to leave TikTok. Wallplayer starts again on TikTok if that is where you left it
   (paused until you press play).
 

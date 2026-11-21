@@ -6,7 +6,8 @@ the section that matches the version in `src-tauri/Cargo.toml`.
 ## 1.0.9
 
 ### Fixed
-- Other displays now follow TikTok too: instead of the playlist they show the same vertical video (muted, in step with the main display), its Like / Save state, the tabs, *Up next* and the video's details. Back to music, they show the playlist again.
+- Other displays now follow TikTok too: instead of the playlist they show the same video (as a still frame), its Like / Save state, the tabs, *Up next* and the video's details. Back to music, they show the playlist again.
+- TikTok videos load faster and no longer stutter: the hidden TikTok pages that supply the list stop downloading and playing videos and pictures, the next video loads quietly while the current one plays (so it starts at once), the blurred background is a still frame of the video instead of a second copy playing, and other displays show a still frame instead of another stream.
 
 ## 1.0.8
 

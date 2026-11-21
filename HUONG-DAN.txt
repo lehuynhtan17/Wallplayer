@@ -162,8 +162,8 @@ CẬP NHẬT (không cần file cài)
 
 TIKTOK
 - Chọn TikTok ở nút nền tảng (bên trái thanh phát nhạc). Giữa màn hình thành một video dọc, từng video một như
-  app TikTok: không có playlist, đồng hồ dời sang bên trái, nền là chính video đó làm mờ, lan ra toàn màn hình
-  (khi tiết kiệm pin thì là ảnh tĩnh).
+  app TikTok: không có playlist, đồng hồ dời sang bên trái, nền là khung hình của video đó làm mờ, lan ra
+  toàn màn hình.
 - Qua video sau / trước: lăn chuột trên video, phím ↓ / ↑, hoặc nút ▲ ▼ (và ⏮ ⏭ trên thanh phát).
   Bấm vào video để dừng / phát.
 - Tự cuộn (nút dưới ▼): bật thì hết video tự sang video tiếp theo; tắt thì mỗi video phát lặp lại.
@@ -176,7 +176,7 @@ TIKTOK
 - Cách hoạt động: TikTok không mở bảng tin cho app khác, nên Wallplayer mở chính trang TikTok ở chỗ khuất (với
   phiên đăng nhập TikTok của bạn) để đọc danh sách video, và phát từng video bằng trình phát nhúng chính thức
   của TikTok. Nếu TikTok đòi xác minh, bấm "Mở TikTok", làm theo, rồi bấm "Xong".
-- Màn hình phụ hiện cùng video (tắt tiếng) và thông tin của nó.
+- Màn hình phụ hiện cùng video (ảnh tĩnh) và thông tin của nó.
 - Chọn nền tảng khác để thoát TikTok. Lần mở sau Wallplayer vẫn ở TikTok nếu bạn thoát khi đang ở đó (đứng yên
   cho tới khi bạn bấm phát).
 
