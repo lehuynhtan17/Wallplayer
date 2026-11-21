@@ -39,7 +39,17 @@ fn data_dir(app: &AppHandle) -> Option<PathBuf> {
 }
 
 /// One line in wallplayer.log (kept small: the newest 200 lines).
+static APP: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
+
+/// Log from code that has no AppHandle at hand (the desktop watcher).
+pub fn note(line: &str) {
+    if let Some(app) = APP.get() {
+        log(app, line);
+    }
+}
+
 pub fn log(app: &AppHandle, line: &str) {
+    let _ = APP.set(app.clone());
     let Some(d) = data_dir(app) else { return };
     let p = d.join("wallplayer.log");
     let mut lines: Vec<String> = std::fs::read_to_string(&p).unwrap_or_default().lines().map(String::from).collect();

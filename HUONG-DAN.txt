@@ -181,8 +181,9 @@ TIKTOK
   cho tới khi bạn bấm phát).
 
 NẾU GIAO DIỆN BIẾN MẤT
-Giao diện Wallplayer chạy bằng Microsoft Edge WebView2, nằm trong lớp hình nền của desktop. Nếu bộ máy này dừng, hoặc
-Windows dựng lại lớp hình nền (đổi hình nền, màn hình thức dậy, game toàn màn hình đổi chế độ…), Wallplayer tự mở lại sau vài giây
+Giao diện Wallplayer chạy bằng Microsoft Edge WebView2. Nếu bộ máy này dừng, Wallplayer tự mở lại sau vài giây. Trên Windows 11
+24H2 trở lên, giao diện nằm ngay dưới lớp icon desktop nên không mất khi Windows dựng lại lớp hình nền (mở game, đổi hình nền,
+màn hình thức dậy); nếu vẫn mất, Wallplayer tự mở lại
 (tối đa 3 lần trong 10 phút; quá số đó thì thoát ở khay hệ thống rồi mở lại). Nhật ký ghi ở
 %LOCALAPPDATA%\com.tan.wallplayer\wallplayer.log.
 

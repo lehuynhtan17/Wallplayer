@@ -199,10 +199,10 @@ ON THE DESKTOP (tray icon, right-click)
 - "Start with Windows": starts Wallplayer when you sign in (also in Settings → General).
 
 IF THE SKIN DISAPPEARS
-Wallplayer runs its interface in Microsoft Edge WebView2, inside the desktop's wallpaper layer. If that
-engine stops, or Windows rebuilds the wallpaper layer (a wallpaper change, the screen waking up, a full-screen
-game switching display modes…), Wallplayer starts itself again within a few seconds (at most 3 times in 10 minutes; after that, quit it from the tray and open it
-again). What happened is written to %LOCALAPPDATA%\com.tan.wallplayer\wallplayer.log.
+Wallplayer runs its interface in Microsoft Edge WebView2. On Windows 11 24H2 and later the skin sits right
+under the desktop icons, so it stays when Windows rebuilds the wallpaper layer (a game starting, a wallpaper
+change, the screen waking up). If the web engine stops or the skin still goes away, Wallplayer starts itself
+again within a few seconds (at most 3 times in 10 minutes; after that, quit it from the tray and open it again). What happened is written to %LOCALAPPDATA%\com.tan.wallplayer\wallplayer.log.
 
 SELF-TEST
 Press Ctrl + Shift + D (or Settings → General → Self-test) to check the Windows and YouTube features one by one

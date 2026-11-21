@@ -1011,6 +1011,16 @@ fn main() {
             update::spawn(handle.clone());
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Wallplayer");
+        .build(tauri::generate_context!())
+        .expect("error while running Wallplayer")
+        .run(|_app, event| {
+            // Wallplayer lives in the tray: it quits only from there (or to update / restart itself),
+            // never because its windows went away — the skin then comes back (see the main window's
+            // Destroyed event).
+            if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
+                if code.is_none() && !guard::QUITTING.load(std::sync::atomic::Ordering::Relaxed) {
+                    api.prevent_exit();
+                }
+            }
+        });
 }

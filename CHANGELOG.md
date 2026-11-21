@@ -3,6 +3,12 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.11
+
+### Fixed
+- The skin no longer disappears when Windows rebuilds the desktop's wallpaper layer (often when a game starts or changes display mode, the wallpaper changes or the screen wakes up). On Windows 11 24H2 and later the skin now sits directly under the desktop icons, as Microsoft asks of wallpaper apps (and as Lively Wallpaper does), instead of inside the layer Windows rebuilds; when that layer comes back, Wallplayer puts it under the skin again.
+- When the skin window did go away, Wallplayer closed itself before it could start again. It now stays in the tray and starts again.
+
 ## 1.0.10
 
 ### Fixed

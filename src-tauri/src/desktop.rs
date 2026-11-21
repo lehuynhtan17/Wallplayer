@@ -13,9 +13,9 @@ use std::sync::Mutex;
 use serde::Serialize;
 
 use windows::core::{w, HSTRING, PCWSTR};
-use windows::Win32::Foundation::{BOOL, HWND, LPARAM, LRESULT, RECT, TRUE, WPARAM};
+use windows::Win32::Foundation::{BOOL, COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, TRUE, WPARAM};
 use windows::Win32::Graphics::Gdi::{
-    EnumDisplayMonitors, GetMonitorInfoW, MonitorFromWindow, HDC, HMONITOR, MONITORINFO, MONITORINFOEXW,
+    EnumDisplayMonitors, GetMonitorInfoW, MonitorFromWindow, ScreenToClient, HDC, HMONITOR, MONITORINFO, MONITORINFOEXW,
     MONITOR_DEFAULTTONEAREST,
 };
 use windows::Win32::UI::Shell::{
@@ -308,6 +308,30 @@ unsafe fn place(h: HWND, mode: Mode) -> Result<(), String> {
     if mode == Mode::Wallpaper {
         let worker = find_worker().ok_or_else(|| "desktop layer (WorkerW) not found".to_string())?;
         store_mode(mode);
+        // Windows 11 24H2+ ("raised desktop"): a layered child of Progman, just under the icons
+        // (SHELLDLL_DefView) and above the WorkerW that draws the plain wallpaper — what Microsoft
+        // asks of wallpaper apps there, and what Lively Wallpaper does. Windows rebuilds that WorkerW
+        // at times (a game switching display modes, a wallpaper change, the screen waking up…): a
+        // child of the WorkerW is destroyed with it, a child of Progman stays.
+        if let Some((progman, icons)) = raised_desktop() {
+            let style = GetWindowLongPtrW(h, GWL_STYLE);
+            SetWindowLongPtrW(h, GWL_STYLE, (style & !(WS_POPUP.0 as isize)) | WS_CHILD.0 as isize);
+            let ex = GetWindowLongPtrW(h, GWL_EXSTYLE);
+            SetWindowLongPtrW(h, GWL_EXSTYLE, ex | WS_EX_LAYERED.0 as isize);
+            let _ = SetLayeredWindowAttributes(h, COLORREF(0), 255, LWA_ALPHA);
+            let _ = SetParent(h, progman);
+            if GetParent(h).ok() == Some(progman) {
+                let mut p = POINT { x: mx, y: my };
+                let _ = ScreenToClient(progman, &mut p);
+                SetWindowPos(h, icons, p.x, p.y, sw, sh, SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_SHOWWINDOW)
+                    .map_err(|e| e.to_string())?;
+                worker_to_bottom(progman);
+                return Ok(());
+            }
+            // could not: back to the classic way below
+            let ex = GetWindowLongPtrW(h, GWL_EXSTYLE);
+            SetWindowLongPtrW(h, GWL_EXSTYLE, ex & !(WS_EX_LAYERED.0 as isize));
+        }
         let style = GetWindowLongPtrW(h, GWL_STYLE);
         SetWindowLongPtrW(
             h,
@@ -347,6 +371,10 @@ unsafe fn place(h: HWND, mode: Mode) -> Result<(), String> {
         let _ = SetParent(h, HWND::default());
         let style = GetWindowLongPtrW(h, GWL_STYLE);
         SetWindowLongPtrW(h, GWL_STYLE, (style & !(WS_CHILD.0 as isize)) | WS_POPUP.0 as isize);
+        let ex = GetWindowLongPtrW(h, GWL_EXSTYLE);
+        if ex & WS_EX_LAYERED.0 as isize != 0 {
+            SetWindowLongPtrW(h, GWL_EXSTYLE, ex & !(WS_EX_LAYERED.0 as isize));
+        }
     }
 
     let after = if mode == Mode::Peek { HWND_TOPMOST } else { HWND_BOTTOM };
@@ -362,6 +390,49 @@ unsafe fn place(h: HWND, mode: Mode) -> Result<(), String> {
         let _ = SetForegroundWindow(h);
     }
     Ok(())
+}
+
+/// Windows 11 24H2+ desktop: Progman has no surface of its own (WS_EX_NOREDIRECTIONBITMAP), the icons
+/// are a layered SHELLDLL_DefView child and a WorkerW child below them draws the wallpaper.
+/// Returns (Progman, SHELLDLL_DefView).
+unsafe fn raised_desktop() -> Option<(HWND, HWND)> {
+    let progman = FindWindowW(w!("Progman"), PCWSTR::null()).ok()?;
+    if progman.is_invalid() || (GetWindowLongPtrW(progman, GWL_EXSTYLE) as u32 & WS_EX_NOREDIRECTIONBITMAP.0) == 0 {
+        return None;
+    }
+    let icons = FindWindowExW(progman, HWND::default(), w!("SHELLDLL_DefView"), PCWSTR::null()).ok()?;
+    if icons.is_invalid() {
+        return None;
+    }
+    Some((progman, icons))
+}
+
+/// Keep the WorkerW (the plain wallpaper) at the very bottom, under the skin.
+unsafe fn worker_to_bottom(progman: HWND) {
+    let Ok(worker) = FindWindowExW(progman, HWND::default(), w!("WorkerW"), PCWSTR::null()) else { return };
+    if worker.is_invalid() {
+        return;
+    }
+    if GetWindow(worker, GW_HWNDLAST).ok() != Some(worker) {
+        let _ = SetWindowPos(worker, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
+}
+
+/// On the raised desktop, keep the wallpaper layer under the skin: when Windows rebuilds the WorkerW
+/// (the skin stays, it is Progman's child) raise the desktop again and put the new WorkerW at the bottom.
+unsafe fn keep_layer(h: HWND, last_raise: &mut std::time::Instant) {
+    let Some((progman, _)) = raised_desktop() else { return };
+    if GetParent(h).ok() != Some(progman) {
+        return;
+    }
+    let worker = FindWindowExW(progman, HWND::default(), w!("WorkerW"), PCWSTR::null()).ok().filter(|w| !w.is_invalid());
+    if worker.is_none() && last_raise.elapsed() >= std::time::Duration::from_secs(3) {
+        *last_raise = std::time::Instant::now();
+        crate::guard::note("the desktop's wallpaper layer was rebuilt: the skin stays, the layer is raised again");
+        let mut res: usize = 0;
+        let _ = SendMessageTimeoutW(progman, 0x052C, WPARAM(0xD), LPARAM(0x1), SMTO_NORMAL, 1000, Some(&mut res));
+    }
+    worker_to_bottom(progman);
 }
 
 /// Locate the WorkerW that sits behind the desktop icons.
@@ -529,11 +600,15 @@ pub fn spawn_watcher(raw: isize) {
         let h = hwnd(raw);
         let mut quiet = 0u32;
         let mut tick = 0u32;
+        let mut last_raise = std::time::Instant::now().checked_sub(std::time::Duration::from_secs(10)).unwrap_or_else(std::time::Instant::now);
         loop {
             std::thread::sleep(std::time::Duration::from_millis(150));
             tick += 1;
             if tick % 14 == 0 && ICONS_HIDE.load(Ordering::Relaxed) {
                 apply_icons();   // explorer restarts / refreshes can bring them back
+            }
+            if tick % 7 == 0 && MODE.load(Ordering::Relaxed) == Mode::Wallpaper as u8 {
+                keep_layer(h, &mut last_raise);
             }
             if MODE.load(Ordering::Relaxed) != Mode::Desktop as u8 {
                 FRONT.store(false, Ordering::Relaxed);
