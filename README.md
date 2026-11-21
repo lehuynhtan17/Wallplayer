@@ -24,7 +24,7 @@ Wallplayer lives *behind* your desktop icons, the same way Wallpaper Engine does
 
 | | |
 |---|---|
-| **Smart search** | Songs, **Singers** and **Playlists** in one box — tabs *All · Songs · Singers · Playlists*, typing suggestions, YouTube Music, SoundCloud and Spotify. |
+| **Smart search** | Songs, **Singers** and **Playlists** in one box — tabs *All · Songs · Singers · Playlists*, typing suggestions, YouTube Music, SoundCloud and Spotify. Opened empty, it shows **Music for you**: the playlists YouTube picks for your account under Home → Music. |
 | **Continue Playing** | Pick one song and the queue becomes YouTube’s own **Mix** for it (personal when signed in), and it keeps going like on YouTube. A **History** button flips it to *History Playing* (last 100 songs). |
 | **TikTok** | A TikTok channel made for it: one vertical video at a time, scroll or ↑ ↓ for the next, *Auto scroll* on or off, *For You* (yours when signed in) or any search, with *Up next*, the video's details, and Like · Comments · Save · Share beside it. |
 | **Synced lyrics** | Found automatically online (LRCLIB, NetEase, Genius), timed to the song — **word by word** when NetEase has it — with a second-language subtitle line and per-song offset (`[` `]`). 14 effects, including an **Apple Music**-style scrolling view. |

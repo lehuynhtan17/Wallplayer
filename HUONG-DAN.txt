@@ -27,8 +27,13 @@ Nền tảng · Lùi · Phát/Dừng · Tới · Repeat (Tắt → Lặp danh s�
 Trong ô search: ✕ xoá nhanh chữ đã gõ · ◎ video nhạc làm nền · nút thu gọn = ẩn toàn bộ giao diện (phím H hoặc nhấp đúp hình nền để hiện lại).
 
 SEARCH
-- Bấm vào ô search → hiện panel phía trên: chưa gõ thì có "Recently played" (bài gần đây) và
-  "Recent playlists" (playlist / album nghe gần đây);
+- Bấm vào ô search → hiện panel phía trên: chưa gõ thì có "Âm nhạc dành cho bạn", "Recently played"
+  (bài gần đây) và "Recent playlists" (playlist / album nghe gần đây);
+- "Âm nhạc dành cho bạn" (YouTube, cần đăng nhập: Cài đặt → Tài khoản): các playlist YouTube gợi ý cho
+  bạn ở Trang chủ → Âm nhạc — các Tuyển tập (danh sách kết hợp), Danh sách nhạc kết hợp của tôi, tuyển
+  tập nhạc của nghệ sĩ — theo đúng các hàng như trên YouTube. Bấm để phát; Tuyển tập phát tiếp liên tục
+  như trên YouTube và hiện "Danh sách kết hợp" ở bên trái. Tự làm mới mỗi 15 phút. Chưa đăng nhập thì
+  có một ô nhỏ mời đăng nhập (bấm × để ẩn).
   gõ thì có "Top Results" (bìa lớn) + "Songs" (danh sách). ↑ ↓ chọn, Enter phát, Esc đóng.
 - Ô playlist của YouTube Music có nút tim: lưu playlist / album vào thư viện YouTube Music (cần đăng
   nhập YouTube trước: Cài đặt → Tài khoản). Nút + trên "Continue Playing" lưu danh sách bên trái

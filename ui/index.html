@@ -368,6 +368,14 @@ img{display:block}
 #rCols:empty{display:none}
 .rc.col .ra{border-radius:1.1rem}
 .rempty{font-size:1.1rem;color:var(--txt3);padding:.4rem .2rem}
+.rc.mixc{width:16.4rem;position:relative;padding-top:.45rem}
+.rc.mixc::before{content:'';position:absolute;top:0;left:1rem;right:1rem;height:.7rem;border-radius:.7rem .7rem 0 0;background:rgba(255,255,255,.2)}
+.rc.mixc .ra{width:16.4rem;height:9.2rem}
+.rc .mixb{position:absolute;left:.5rem;bottom:.5rem;display:flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:.55rem;background:rgba(0,0,0,.62);font-size:.86rem;font-weight:700;font-style:normal;color:#fff}
+.rc .mixb .ico{width:1rem;height:1rem}
+#rFeed .rlabel .pi{width:1.6rem;height:1.6rem}
+#rFeed .rcta .fx{width:2.2rem;height:2.2rem;flex:none}
+.skel.mixc{width:16.4rem;height:11.6rem}
 .skel{flex:none;width:10.2rem;height:12.6rem;border-radius:1.1rem;background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.12),rgba(255,255,255,.06));background-size:200% 100%;animation:sk 1.2s linear infinite}
 @keyframes sk{to{background-position:-200% 0}}
 .rcta{display:flex;align-items:center;gap:.9rem;padding:.7rem .9rem;margin:-.2rem 0 1.1rem;border-radius:1.2rem;background:rgba(255,255,255,.08);font-size:1.08rem;color:var(--txt2)}
@@ -829,7 +837,7 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
   <div id="dock">
     <div id="mvPick"></div>
     <div id="results" class="glass">
-      <div id="rCta"></div><div class="rsug" id="rSug"></div><div class="rtabs" id="rTabs"></div><div class="rlabel" id="rTopLabel">Top Results</div><div class="rrow" id="rTop"></div><div id="rEnt"></div>
+      <div id="rCta"></div><div class="rsug" id="rSug"></div><div class="rtabs" id="rTabs"></div><div id="rFeed"></div><div class="rlabel" id="rTopLabel">Top Results</div><div class="rrow" id="rTop"></div><div id="rEnt"></div>
       <div class="rlabel" id="rColLabel" style="display:none">Playlists &amp; albums</div><div class="rrow" id="rCols"></div>
       <div class="rlabel" id="rSongsLabel">Songs</div><div id="rSongs"></div>
     </div>
@@ -884,7 +892,7 @@ const I18N = (() => {
   let saved = null; try { saved = (JSON.parse(localStorage.getItem('wp.look') || '{}') || {}).lang } catch(e){}
   const lang = saved || (/^vi\b/i.test(navigator.language || '') ? 'vi' : 'en');
   const V = window.WP_VI || {dict: {}, patterns: []};
-  const NOTR = '#qlist .qm,#flow,#lyrics2,#npTitle,#npSub,#rTop,#rSongs,#rEnt,#rCols,#rSug,#clock,.upNotes,#lyrList .lv,#mvPick .tip,.bgv,#flowLabel,svg,script,style,textarea,.selftest';
+  const NOTR = '#qlist .qm,#flow,#lyrics2,#npTitle,#npSub,#rTop,#rSongs,#rEnt,#rCols,#rSug,#rFeed .rrow,#clock,.upNotes,#lyrList .lv,#mvPick .tip,.bgv,#flowLabel,svg,script,style,textarea,.selftest';
   const tr = t => {
     if (lang !== 'vi' || !t) return t; const k = t.trim(); if (!k) return t;
     const v = V.dict[k]; if (v != null) return t.replace(k, v);
@@ -2739,12 +2747,12 @@ function updatePlaceholder(){ $('#q').placeholder = `Search ${platById(searchPla
 $('#searchBox').addEventListener('mousedown', e => { if (!e.target.closest('button') && e.target !== $('#q')){ e.preventDefault(); $('#q').focus() } });
 $('#q').addEventListener('focus', showSearch);
 let sTimer = 0;
-$('#q').addEventListener('input', () => { clearTimeout(sTimer); const v = $('#q').value; app.classList.add('searching');
+$('#q').addEventListener('input', () => { clearTimeout(sTimer); const v = $('#q').value; app.classList.add('searching'); if (v.trim()) $('#rFeed').innerHTML = '';
   if (!v.trim()){ S.results = []; renderResults(null); return } sTimer = setTimeout(() => doSearch(v), 320) });
 async function doSearch(q){
   q = q.trim(); const seq = ++S.searchSeq; if (!q) return;
   if (searchPlatform() === 'tiktok') return;   // TikTok: Enter opens the search as a vertical feed
-  $('#rTop').innerHTML = '<div class="skel"></div>'.repeat(5); $('#rSongs').innerHTML = ''; $('#rCta').innerHTML = ''; $('#rEnt').innerHTML = ''; $('#rSug').innerHTML = ''; $('#rCols').innerHTML = ''; $('#rColLabel').style.display = 'none';
+  $('#rTop').innerHTML = '<div class="skel"></div>'.repeat(5); $('#rSongs').innerHTML = ''; $('#rCta').innerHTML = ''; $('#rEnt').innerHTML = ''; $('#rSug').innerHTML = ''; $('#rCols').innerHTML = ''; $('#rColLabel').style.display = 'none'; $('#rFeed').innerHTML = '';
   const plat = searchPlatform(); let res = [], meta = {source: plat, needs_login: false}; S.rich = null; S.rtab = 'all'; S.cols = [];
   if (T){
     if (plat === 'ytmusic'){ try { const r = await invoke('search_rich', {query: q}); if (r && r.songs && r.songs.length){ S.rich = r; res = r.songs.map(mapTrack); meta = {source: plat, needs_login: false} } } catch(e){} }
@@ -2759,7 +2767,7 @@ async function doSearch(q){
   if (T){ try { const cols = await invoke('search_collections', {platform: plat, query: q}); if (seq !== S.searchSeq) return; S.cols = cols || []; renderCols() } catch(e){} }
 }
 const colKey = c => c.source + '|' + c.id;
-const colHTML = (c, i) => `<div class="rc col" data-c="${i}"><div class="ra"><img src="${esc(c.art || '')}" alt="" loading="lazy"><span class="pl">${I.play}</span>${c.source === 'ytmusic' ? `<button class="b sm csave ${S.savedCols.includes(colKey(c)) ? 'on' : ''}" data-save="${i}" title="${S.savedCols.includes(colKey(c)) ? 'Saved in your YouTube Music library' : 'Save to YouTube Music'}">${S.savedCols.includes(colKey(c)) ? I.heartF : I.heart}</button>` : ''}</div><b>${esc(c.title)}</b><span>${c.kind === 'album' ? 'Album' : 'Playlist'}${c.sub ? ' · ' + esc(c.sub.replace(/^(Album|Playlist|EP|Single)\s*•\s*/i, '')) : ''}</span></div>`;
+const colHTML = (c, i) => `<div class="rc col" data-c="${i}"><div class="ra"><img src="${esc(c.art || '')}" alt="" loading="lazy"><span class="pl">${I.play}</span>${c.source === 'ytmusic' ? `<button class="b sm csave ${S.savedCols.includes(colKey(c)) ? 'on' : ''}" data-save="${i}" title="${S.savedCols.includes(colKey(c)) ? 'Saved in your YouTube Music library' : 'Save to YouTube Music'}">${S.savedCols.includes(colKey(c)) ? I.heartF : I.heart}</button>` : ''}</div><b>${esc(c.kind === 'mix' ? stripMix(c.title) : c.title)}</b><span>${c.kind === 'album' ? 'Album' : c.kind === 'mix' ? mixWord() : 'Playlist'}${c.sub ? ' · ' + esc(c.sub.replace(/^(Album|Playlist|EP|Single)\s*•\s*/i, '')) : ''}</span></div>`;
 function renderCols(){ renderTabs(); applyTab() }
 
 /* playlists & albums you played lately: shown when the search opens, next to the recent songs */
@@ -2797,6 +2805,7 @@ async function saveQueue(){
 // play a whole playlist / album
 async function playCollection(c){
   if (!c) return;
+  if (c.source === 'ytmix'){ const [list, video] = String(c.id).split(':'); playMix({list, video, title: c.title, sub: c.sub, art: c.art}); return }
   if (c.source === 'spotify'){ rememberCol(c); closeSearch(); stopInternal(); try { const r = await invoke('spotify_play', {uri: c.id}); toast(r === 'played' ? `Playing ${c.title} on Spotify` : `Opened ${c.title} in Spotify`) } catch(e){ openExternal(c.id) } return }
   toast(`Loading ${c.title}…`);
   try {
@@ -2874,23 +2883,78 @@ async function maybeRadio(force){
 async function moreMix(){
   const m = S.mix; if (!m || m.busy || !m.cont) return false; m.busy = true;
   try {
-    const r = await invoke('mix', {id: m.seed, cont: m.cont}); if (S.mix !== m) return false;
-    m.cont = r.cont || '';
-    const have = new Set(S.queue.map(songKey)), add = (r.tracks || []).map(mapTrack).filter(x => !have.has(songKey(x)));
-    if (!add.length) return false;
+    let tracks;
+    if (m.list){   // a Mix from YouTube → Music: YouTube extends it from its last song
+      const last = S.queue[S.queue.length - 1]; if (!last || !last.play) return false;
+      tracks = await invoke('yt_list', {video: last.play, list: m.list}); if (S.mix !== m) return false;
+    } else {
+      const r = await invoke('mix', {id: m.seed, cont: m.cont}); if (S.mix !== m) return false;
+      m.cont = r.cont || ''; tracks = r.tracks || [];
+    }
+    const have = new Set(S.queue.map(songKey)), add = (tracks || []).map(mapTrack).filter(x => !have.has(songKey(x)));
+    if (!add.length){ if (m.list) m.cont = ''; return false }
     S.queue.push(...add); renderQueue(); renderFlow(true); return true;
   } catch(e){ return false } finally { m.busy = false }
 }
+/* YouTube → Home → Music ("Âm nhạc"): the playlists YouTube picks for the signed-in account (mostly Mixes),
+   shown when the search opens with nothing typed. Kept for 15 minutes, refreshed in the background. */
+S.feed = store.get('ytFeed', null); S.feedBusy = false;
+const mixWord = () => I18N.lang === 'vi' ? 'Tuyển tập' : 'Mix';
+const stripMix = t => String(t || '').replace(/^(Mix|Danh sách kết hợp)\s*[–-]\s*/i, '');
+const feedOn = () => T && ['ytmusic', 'youtube'].includes(searchPlatform());
+async function loadFeed(force){
+  if (!feedOn() || !(S.acc && S.acc.youtube) || S.feedBusy) return;
+  const f = S.feed, hl = I18N.lang;
+  if (!force && f && f.hl === hl && Date.now() - f.at < 15 * 60e3) return;
+  S.feedBusy = true; if (!f || !f.shelves) renderFeed();
+  try { const shelves = await invoke('yt_music_feed', {hl}); S.feed = {hl, at: Date.now(), shelves: shelves || []}; store.set('ytFeed', S.feed) }
+  catch(e){ if (String(e) === 'not_signed_in'){ S.feed = null; store.set('ytFeed', null) } else if (S.feed) S.feed.at = Date.now() - 12 * 60e3 }   // try again in a few minutes
+  finally { S.feedBusy = false }
+  renderFeed();
+}
+function renderFeed(){
+  const el = $('#rFeed'); if (!el) return;
+  if (!feedOn() || $('#q').value.trim() || S.resKind !== 'recent'){ el.innerHTML = ''; return }
+  const yt = platById('youtube').icon;
+  if (!(S.acc && S.acc.youtube)){
+    el.innerHTML = S.acc && !store.get('feedCtaOff', false) ? `<div class="rcta">${yt}<span>Sign in to YouTube to see the playlists YouTube picks for you.</span><button class="abtn pri" data-acc="1">Sign in</button><button class="b sm fx" data-feedx="1" title="Hide">${I.xs}</button></div>` : '';
+    return;
+  }
+  const sh = S.feed && S.feed.shelves;
+  if (!sh){ el.innerHTML = S.feedBusy ? `<div class="rlabel">${yt}Music for you</div><div class="rrow">${'<div class="skel mixc"></div>'.repeat(4)}</div>` : ''; return }
+  const card = (c, s, i) => `<div class="rc mixc" data-f="${s}:${i}"><div class="ra"><img src="${esc(c.art || '')}" alt="" loading="lazy"><em class="mixb">${I.list}${/^RD/.test(c.list) ? mixWord() : I18N.lang === 'vi' ? 'Danh sách phát' : 'Playlist'}</em><span class="pl">${I.play}</span></div><b title="${esc(c.title)}">${esc(stripMix(c.title))}</b><span>${esc(c.sub || '')}</span></div>`;
+  el.innerHTML = sh.map((r, s) => `<div class="rlabel">${s === 0 && !r.title ? yt + 'Music for you' : esc(r.title)}</div><div class="rrow">${r.items.map((c, i) => card(c, s, i)).join('')}</div>`).join('');
+  watchDragScroll(el);
+}
+// play a playlist of the feed; a Mix keeps going like on YouTube
+async function playMix(f, el){
+  if (!T || !f || !f.list || !f.video) return; if (el) el.classList.add('busy');
+  try {
+    const list = (await invoke('yt_list', {video: f.video, list: f.list})).map(mapTrack); if (!list.length) throw '';
+    const title = stripMix(f.title), mix = /^RD/.test(f.list);
+    rememberCol({id: f.list + ':' + f.video, kind: mix ? 'mix' : 'playlist', title: f.title, sub: f.sub || '', art: f.art || list[0].art || '', source: 'ytmix'});
+    S.qLabel = `${mix ? 'Mix' : 'Playlist'} · ${title}`; closeSearch(); playTrack(list[0], list);
+    S.mix = mix ? {list: f.list, title, cont: 'yt'} : null; renderQueue();
+  } catch(e){ toast(e && typeof e === 'string' ? e : "Couldn't open this playlist — try another") }
+  if (el) el.classList.remove('busy');
+}
+$('#rFeed').addEventListener('click', e => {
+  if (e.target.closest('[data-acc]')){ e.stopPropagation(); openAccounts(); return }
+  if (e.target.closest('[data-feedx]')){ e.stopPropagation(); store.set('feedCtaOff', true); renderFeed(); return }
+  const c = e.target.closest('.rc[data-f]'); if (!c) return; e.stopPropagation();
+  const [s, i] = c.dataset.f.split(':').map(Number), r = S.feed && S.feed.shelves && S.feed.shelves[s];
+  if (r && r.items[i]) playMix(r.items[i], c);
+});
 const fmtDur = s => s > 0 ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '';
 function renderResults(res, meta){
   const top = $('#rTop'), songs = $('#rSongs'), cta = $('#rCta');
   if (!res){
-    const base = (S.history.length ? S.history : S.queue).slice(0, 10); S.results = base; S.resKind = 'recent'; cta.innerHTML = '';
+    const base = (S.history.length ? S.history : S.queue).slice(0, 10); S.results = base; S.resKind = 'recent'; cta.innerHTML = ''; renderFeed(); loadFeed();
     $('#rTopLabel').innerHTML = base.length ? 'Recently played' : `Search ${esc(platById(searchPlatform()).name)}`;
     top.innerHTML = base.length ? base.map(cardHTML).join('') : `<div class="rempty">Type a song, artist or album</div>`;
     $('#rSongsLabel').style.display = 'none'; songs.innerHTML = ''; $('#rEnt').innerHTML = ''; $('#rSug').innerHTML = ''; S.cols = []; S.rich = null; S.rtab = 'all'; renderCols(); renderTabs(); return;
   }
-  S.resKind = 'search';
+  S.resKind = 'search'; $('#rFeed').innerHTML = '';
   const src = platById(meta && meta.source || searchPlatform());
   $('#rTopLabel').innerHTML = `Top Results <small>·</small> ${src.icon}<small>${esc(src.name)}</small>`;
   cta.innerHTML = meta && meta.needs_login ? `<div class="rcta">${platById('spotify').icon}<span>Connect your Spotify account to search Spotify. Showing the Apple Music catalogue for now.</span><button class="abtn pri" data-acc="1">Connect</button></div>` : '';
@@ -3029,7 +3093,8 @@ $('#platMenu').addEventListener('click', e => { const b = e.target.closest('.mi'
 $('#platBtn').onclick = e => { e.stopPropagation(); const m = $('#platMenu'); closeMenus(m); renderPlatMenu(); m.classList.toggle('open') };
 
 /* accounts */
-async function refreshAccounts(){ if (!T) return; const was = S.acc && S.acc.tiktok; try { S.acc = await invoke('account_status') } catch(e){} renderPlatMenu(); if ($('#accMenu').classList.contains('open')) renderAccounts()
+async function refreshAccounts(){ if (!T) return; const was = S.acc && S.acc.tiktok, wasYt = S.acc && S.acc.youtube; try { S.acc = await invoke('account_status') } catch(e){} renderPlatMenu();
+  if (S.acc && wasYt !== S.acc.youtube){ if (!S.acc.youtube){ S.feed = null; store.set('ytFeed', null) } loadFeed(wasYt !== undefined); if (S.resKind === 'recent') renderFeed() } if ($('#accMenu').classList.contains('open')) renderAccounts()
   if (TT.on){ renderTT(); if (S.acc && was !== undefined && was !== S.acc.tiktok && TT.mode === 'foryou') TT.feed('foryou') } }
 function openAccounts(){ openAppPop('acc') }
 function renderAccounts(){

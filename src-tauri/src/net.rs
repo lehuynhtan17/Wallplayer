@@ -1235,6 +1235,178 @@ pub async fn ytm_mix(video_id: &str, cont: Option<&str>) -> Result<(Vec<Track>, 
     Ok((tracks, next))
 }
 
+// ───────────────────────── YouTube · Music (home page, signed in) ─────────────────────────
+
+/// A playlist from the YouTube home page: mostly Mixes ("Danh sách kết hợp"), played from `video` in `list`.
+#[derive(Serialize, Clone, Debug)]
+pub struct FeedList {
+    pub list: String,
+    pub video: String,
+    pub title: String,
+    pub sub: String,
+    pub art: String,
+}
+
+/// A row of playlists; the first row has no title (the Music feed itself), the others keep YouTube's title.
+#[derive(Serialize, Clone, Debug)]
+pub struct FeedShelf {
+    pub title: String,
+    pub items: Vec<FeedList>,
+}
+
+const YT_WEB_VERSION: &str = "2.20261119.07.00";
+
+fn yt_ctx(hl: &str) -> Value {
+    json!({"client": {"clientName": "WEB", "clientVersion": YT_WEB_VERSION, "hl": hl}})
+}
+
+/// www.youtube.com InnerTube request, signed in with the user's YouTube session when there is one.
+async fn yt_post(path: &str, body: Value) -> Result<Value, String> {
+    use sha1::{Digest, Sha1};
+    let mut req = client()
+        .post(format!("https://www.youtube.com/youtubei/v1/{path}?prettyPrint=false"))
+        .header("Origin", "https://www.youtube.com")
+        .header("Referer", "https://www.youtube.com/");
+    if let Some((cookie, sapisid)) = YT_AUTH.lock().unwrap_or_else(|e| e.into_inner()).clone() {
+        let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        let hash = Sha1::digest(format!("{ts} {sapisid} https://www.youtube.com").as_bytes());
+        let hex: String = hash.iter().map(|b| format!("{b:02x}")).collect();
+        req = req
+            .header("Cookie", cookie)
+            .header("Authorization", format!("SAPISIDHASH {ts}_{hex}"))
+            .header("X-Goog-AuthUser", "0")
+            .header("X-Origin", "https://www.youtube.com");
+    }
+    let resp = req.json(&body).send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("YouTube answered {}", resp.status().as_u16()));
+    }
+    resp.json().await.map_err(|e| e.to_string())
+}
+
+/// One playlist card (lockupViewModel) of the home page; videos and other cards give None.
+fn feed_list(l: &Value) -> Option<FeedList> {
+    if l.get("contentType")?.as_str()? != "LOCKUP_CONTENT_TYPE_PLAYLIST" {
+        return None;
+    }
+    let we = find_key(l.pointer("/rendererContext/commandContext/onTap")?, "watchEndpoint")?;
+    let list = we.get("playlistId")?.as_str()?.to_string();
+    let video = we.get("videoId")?.as_str()?.to_string();
+    let meta = l.pointer("/metadata/lockupMetadataViewModel")?;
+    let title = meta.pointer("/title/content")?.as_str()?.trim().to_string();
+    let sub = meta
+        .pointer("/metadata/contentMetadataViewModel/metadataRows/0/metadataParts/0/text/content")
+        .and_then(|s| s.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    // the biggest picture of the card (the seed video of the Mix)
+    let img = l.pointer("/contentImage/collectionThumbnailViewModel/primaryThumbnail").or_else(|| l.get("contentImage"))?;
+    let mut srcs = Vec::new();
+    walk(img, "sources", &mut srcs);
+    let art = srcs
+        .iter()
+        .filter_map(|s| s.as_array())
+        .flatten()
+        .max_by_key(|s| s.get("width").and_then(|w| w.as_i64()).unwrap_or(0))
+        .and_then(|s| s.get("url"))
+        .and_then(|u| u.as_str())
+        .unwrap_or("")
+        .to_string();
+    if title.is_empty() {
+        return None;
+    }
+    Some(FeedList { list, video, title, sub, art })
+}
+
+/// The playlists YouTube picks for the signed-in user under Home → Music ("Âm nhạc"):
+/// the Mixes of the feed first, then the playlist rows ("Artist mixes for you"…). Videos are left out.
+pub async fn yt_music_feed(hl: &str) -> Result<Vec<FeedShelf>, String> {
+    if !yt_signed_in() {
+        return Err("not_signed_in".into());
+    }
+    let hl = if hl == "vi" { "vi" } else { "en" };
+    let home = yt_post("browse", json!({"context": yt_ctx(hl), "browseId": "FEwhat_to_watch"})).await?;
+    let mut chips = Vec::new();
+    walk(&home, "chipCloudChipRenderer", &mut chips);
+    let token = chips
+        .iter()
+        .find(|c| {
+            let t = c.get("text").map(runs_text).unwrap_or_default().trim().to_lowercase();
+            t == "music" || t == "âm nhạc"
+        })
+        .and_then(|c| find_key(c, "continuationCommand"))
+        .and_then(|c| c.get("token"))
+        .and_then(|t| t.as_str())
+        .ok_or("no_music_feed")?
+        .to_string();
+
+    let mut main = FeedShelf { title: String::new(), items: Vec::new() };
+    let mut shelves: Vec<FeedShelf> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    let mut next = Some(token);
+    for _page in 0..2 {
+        let Some(tok) = next.take() else { break };
+        let v = yt_post("browse", json!({"context": yt_ctx(hl), "continuation": tok})).await?;
+        let mut lists = Vec::new();
+        walk(&v, "continuationItems", &mut lists);
+        let Some(items) = lists.first().and_then(|x| x.as_array()) else { break };
+        for it in items {
+            if let Some(l) = it.pointer("/richItemRenderer/content/lockupViewModel") {
+                if let Some(f) = feed_list(l) {
+                    if seen.insert(f.list.clone()) {
+                        main.items.push(f);
+                    }
+                }
+            } else if let Some(s) = it.pointer("/richSectionRenderer/content/richShelfRenderer") {
+                let title = s.get("title").map(runs_text).unwrap_or_default().trim().to_string();
+                let mut ls = Vec::new();
+                walk(s, "lockupViewModel", &mut ls);
+                let mut row = Vec::new();
+                for f in ls.into_iter().filter_map(feed_list) {
+                    if seen.insert(f.list.clone()) {
+                        row.push(f);
+                    }
+                }
+                if !row.is_empty() {
+                    shelves.push(FeedShelf { title, items: row });
+                }
+            } else if it.get("continuationItemRenderer").is_some() {
+                next = find_key(it, "continuationCommand").and_then(|c| c.get("token")).and_then(|t| t.as_str()).map(String::from);
+            }
+        }
+        // a short feed: one more page, as YouTube loads it when you scroll
+        if main.items.len() >= 12 {
+            break;
+        }
+    }
+    if main.items.is_empty() && shelves.is_empty() {
+        return Err("no_music_feed".into());
+    }
+    let mut out = Vec::new();
+    if !main.items.is_empty() {
+        out.push(main);
+    }
+    out.extend(shelves);
+    Ok(out)
+}
+
+/// The songs of a YouTube playlist or Mix, starting at `video_id` (a Mix goes on: ask again from its last song).
+pub async fn yt_list(video_id: &str, playlist_id: &str) -> Result<Vec<Track>, String> {
+    let ok = |s: &str| !s.is_empty() && s.len() <= 80 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+    if !ok(video_id) || !ok(playlist_id) {
+        return Err("That playlist couldn't be opened".into());
+    }
+    let v = yt_post("next", json!({"context": yt_ctx("en"), "videoId": video_id, "playlistId": playlist_id})).await?;
+    let panel = v.pointer("/contents/twoColumnWatchNextResults/playlist").ok_or("That playlist couldn't be opened")?;
+    let out = ytm_panel(panel);
+    if out.is_empty() {
+        return Err("That playlist is empty or private".into());
+    }
+    Ok(out)
+}
+
+
 pub async fn ytm_radio(video_id: &str) -> Result<Vec<Track>, String> {
     let v = ytm_post(
         "next",

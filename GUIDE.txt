@@ -32,8 +32,12 @@ In the search field: ✕ clears what you typed · ◎ music video wallpaper · t
 whole interface (H, or a double-click on the wallpaper, brings it back).
 
 SEARCH
-- Click the search field (or press Ctrl + Alt + Space): with nothing typed you see "Recently played" and
-  "Recent playlists" (playlists and albums you played lately).
+- Click the search field (or press Ctrl + Alt + Space): with nothing typed you see "Music for you",
+  "Recently played" and "Recent playlists" (playlists and albums you played lately).
+- "Music for you" (YouTube, signed in: Settings → Accounts): the playlists YouTube picks for you under
+  Home → Music — your Mixes, My Mix, artist mixes — in the same rows as on YouTube. Click one to play
+  it; a Mix keeps going like on YouTube and shows as "YouTube Mix" on the left. It reloads every 15
+  minutes. Signed out, a small card offers to sign in (× hides it).
 - Playlist cards from YouTube Music have a heart: it saves the playlist / album to your YouTube Music
   library (sign in to YouTube first: Settings → Accounts). The + button above Continue Playing saves
   the songs on the left as a new private playlist in YouTube Music.

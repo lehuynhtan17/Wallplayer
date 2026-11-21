@@ -436,6 +436,18 @@ async fn mix(app: AppHandle, id: String, cont: Option<String>) -> Result<Mix, St
 }
 
 #[tauri::command]
+async fn yt_music_feed(app: AppHandle, hl: String) -> Result<Vec<net::FeedShelf>, String> {
+    net::set_yt_auth(accounts::yt_auth(&app));
+    net::yt_music_feed(&hl).await
+}
+
+#[tauri::command]
+async fn yt_list(app: AppHandle, video: String, list: String) -> Result<Vec<net::Track>, String> {
+    net::set_yt_auth(accounts::yt_auth(&app));
+    net::yt_list(&video, &list).await
+}
+
+#[tauri::command]
 async fn radio(app: AppHandle, source: String, id: String) -> Result<Vec<net::Track>, String> {
     net::set_yt_auth(accounts::yt_auth(&app));
     match source.as_str() {
@@ -765,6 +777,8 @@ fn main() {
             search,
             search_collections,
             collection_tracks,
+            yt_music_feed,
+            yt_list,
             radio,
             mix,
             tiktok_feed,

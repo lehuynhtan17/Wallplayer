@@ -17,7 +17,7 @@ one exception below, which you can turn off.
 
 | Feature | Services | What is sent |
 |---|---|---|
-| Search, artist pages, suggestions, radio | YouTube Music / YouTube, SoundCloud, Spotify, Apple (iTunes Search) | Your search text, the song or artist you open |
+| Search, artist pages, suggestions, radio, *Music for you* (YouTube Home → Music, with your YouTube sign-in) | YouTube Music / YouTube, SoundCloud, Spotify, Apple (iTunes Search) | Your search text, the song or artist you open |
 | Playing music and music videos | YouTube (embedded player), SoundCloud (embedded player) | What you play, as with the official players |
 | TikTok channel (platform button → TikTok) | TikTok (its own web page, opened out of sight, and its official embed player) | What TikTok's site receives when you open For You or search on it: your TikTok session if you are signed in, your search text, the videos you watch. Wallplayer only reads the list of videos (and a video's comments) from that page. Like and Save press TikTok's own buttons on the video's TikTok page, with your account, only when you click them |
 | Signing in to YouTube, SoundCloud, Spotify or TikTok | Google, SoundCloud, Spotify, TikTok sign-in pages | What you type on their pages. Sign-in cookies stay in Wallplayer's local WebView2 profile on your PC |

@@ -5,6 +5,9 @@ the section that matches the version in `src-tauri/Cargo.toml`.
 
 ## 1.0.11
 
+### New
+- Click the search field with nothing typed and, when you are signed in to YouTube, **Music for you** shows the playlists YouTube picks for you under Home → Music (your Mixes, *My Mix*, artist mixes), with the rows YouTube gives them. Click one to play it: a Mix keeps going like on YouTube. It stays fresh for 15 minutes and reloads in the background; signed out, a small card offers to sign in (it can be hidden).
+
 ### Fixed
 - The skin no longer disappears when Windows rebuilds the desktop's wallpaper layer (often when a game starts or changes display mode, the wallpaper changes or the screen wakes up). On Windows 11 24H2 and later the skin now sits directly under the desktop icons, as Microsoft asks of wallpaper apps (and as Lively Wallpaper does), instead of inside the layer Windows rebuilds; when that layer comes back, Wallplayer puts it under the skin again.
 - When the skin window did go away, Wallplayer closed itself before it could start again. It now stays in the tray and starts again.
