@@ -199,8 +199,9 @@ ON THE DESKTOP (tray icon, right-click)
 - "Start with Windows": starts Wallplayer when you sign in (also in Settings → General).
 
 IF THE SKIN DISAPPEARS
-Wallplayer runs its interface in Microsoft Edge WebView2. If that engine stops, Wallplayer starts itself
-again within a few seconds (at most 3 times in 10 minutes; after that, quit it from the tray and open it
+Wallplayer runs its interface in Microsoft Edge WebView2, inside the desktop's wallpaper layer. If that
+engine stops, or Windows rebuilds the wallpaper layer (a wallpaper change, the screen waking up, a full-screen
+game switching display modes…), Wallplayer starts itself again within a few seconds (at most 3 times in 10 minutes; after that, quit it from the tray and open it
 again). What happened is written to %LOCALAPPDATA%\com.tan.wallplayer\wallplayer.log.
 
 SELF-TEST

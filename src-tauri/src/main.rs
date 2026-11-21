@@ -557,6 +557,7 @@ fn set_ui_lang(app: AppHandle, lang: String) {
 }
 
 pub(crate) fn quit(app: &AppHandle) {
+    guard::QUITTING.store(true, std::sync::atomic::Ordering::Relaxed);
     desktop::set_icons_hidden(false);   // give the desktop icons back
     app.exit(0);
 }
@@ -838,6 +839,17 @@ fn main() {
                 // Alt+F4 while the skin is in front must not tear it down (quit from the tray)
                 if let WindowEvent::CloseRequested { api, .. } = e {
                     api.prevent_close();
+                    return;
+                }
+                // The skin lives inside the desktop's WorkerW layer. When Windows rebuilds that layer
+                // (wallpaper change, display sleep / wake, a full-screen game switching modes,
+                // Explorer restarting…) the skin window is destroyed with it while Wallplayer keeps
+                // running in the tray: start again so it comes back by itself.
+                if let WindowEvent::Destroyed = e {
+                    if !guard::QUITTING.load(std::sync::atomic::Ordering::Relaxed) {
+                        guard::log(&h2, "the skin window was destroyed (the desktop layer was rebuilt): starting again");
+                        guard::relaunch(h2.clone());
+                    }
                     return;
                 }
                 if let WindowEvent::Focused(false) = e {

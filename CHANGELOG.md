@@ -3,6 +3,11 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.10
+
+### Fixed
+- Wallplayer seemed to crash: the skin vanished and only the tray icon was left. The skin lives inside the desktop's wallpaper layer, and when Windows rebuilds that layer (a wallpaper change, the screen waking up, a full-screen game switching display modes, Explorer restarting…) the skin window went with it. Wallplayer now notices and starts itself again (at most 3 times in 10 minutes), and writes it to `wallplayer.log`.
+
 ## 1.0.9
 
 ### New

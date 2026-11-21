@@ -22,6 +22,9 @@ use webview2_com::Microsoft::Web::WebView2::Win32::{
 use webview2_com::ProcessFailedEventHandler;
 use windows_core::Interface;
 
+/// Set when Wallplayer quits (or restarts itself) on purpose: its windows closing then is expected.
+pub static QUITTING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 const MAX_RELAUNCHES: usize = 3;
 const WINDOW_SECS: u64 = 600;
 
@@ -67,7 +70,7 @@ fn may_relaunch(app: &AppHandle) -> bool {
     true
 }
 
-fn relaunch(app: AppHandle) {
+pub fn relaunch(app: AppHandle) {
     // off the WebView2 callback: give the dying engine a moment, then start a fresh Wallplayer
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(800));
