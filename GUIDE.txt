@@ -163,7 +163,8 @@ TIKTOK
   (writing one opens the video on TikTok).
 - "For You" is your TikTok feed when you are signed in to TikTok (Settings → Accounts → TikTok),
   TikTok's general feed when you are not. Type in the search field and press Enter to watch a search;
-  the For You button brings the feed back. "Up next" on the right shows the next three videos.
+  the For You button brings the feed back. "Up next" on the right shows the next three videos;
+  "See more" under a long caption shows all of it.
 - How it works: TikTok has no public feed for apps, so Wallplayer opens TikTok's own page out of sight
   (with your TikTok session) to read the list of videos, and plays each video in TikTok's official embed
   player. If TikTok asks for a check, press "Open TikTok", answer it, then "Done".

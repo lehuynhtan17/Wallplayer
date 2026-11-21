@@ -172,7 +172,7 @@ TIKTOK
   (muốn viết bình luận thì app mở video trên TikTok).
 - "Dành cho bạn" là bảng tin TikTok của bạn khi đã đăng nhập TikTok (Cài đặt → Tài khoản → TikTok), chưa
   đăng nhập thì là bảng tin chung. Gõ vào ô search rồi Enter để xem video theo từ khóa; nút "Dành cho bạn"
-  quay lại bảng tin. "Tiếp theo" bên phải hiện 3 video kế tiếp.
+  quay lại bảng tin. "Tiếp theo" bên phải hiện 3 video kế tiếp; chú thích dài có nút "Xem thêm" để đọc hết.
 - Cách hoạt động: TikTok không mở bảng tin cho app khác, nên Wallplayer mở chính trang TikTok ở chỗ khuất (với
   phiên đăng nhập TikTok của bạn) để đọc danh sách video, và phát từng video bằng trình phát nhúng chính thức
   của TikTok. Nếu TikTok đòi xác minh, bấm "Mở TikTok", làm theo, rồi bấm "Xong".

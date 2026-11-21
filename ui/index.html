@@ -756,6 +756,10 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 .tta span{display:block;font:500 1.15rem Inter,system-ui,sans-serif;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttd{margin:0;font:500 1.3rem/1.45 Inter,system-ui,sans-serif;opacity:.92;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .ttd i{font-style:normal;font-weight:700}
+.ttd.open{display:block;-webkit-line-clamp:unset;max-height:26rem;overflow-y:auto;padding-right:.4rem;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.ttmore{align-self:flex-start;margin-top:-.6rem;padding:0;background:none;color:#fff;font:700 1.2rem Inter,system-ui,sans-serif;opacity:.7}
+.ttmore:hover{opacity:1;text-decoration:underline}
+.ttmore[hidden]{display:none}
 .ttm{display:flex;align-items:center;gap:.5rem;font:600 1.15rem Inter,system-ui,sans-serif;opacity:.7;min-width:0}
 .ttm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tts{display:flex;gap:1.5rem;font:700 1.2rem Inter,system-ui,sans-serif;opacity:.88;flex-wrap:wrap}
@@ -2136,7 +2140,7 @@ const TT = {
     setTrack({id: c.id, title: (c.desc || '').split('\n')[0].replace(/\s+/g, ' ').trim() || c.nick || ('@' + c.author), artist: '@' + c.author, album: c.music ? '♪ ' + c.music : '',
       art: c.cover, url: `https://www.tiktok.com/@${c.author}/video/${c.id}`, duration: c.duration, source: 'tiktok', play: c.id});
     clearTimeout(this.wd); this.wd = setTimeout(() => { if (this.on && this.list[this.i] === c && !this.ready) this.failed(c) }, 15000);
-    this.busy = {}; renderTT(); renderPlay(); this.take(); ttComments();
+    this.busy = {}; this.capOpen = false; renderTT(); renderPlay(); this.take(); ttComments();
   },
   make(id, auto){ const f = document.createElement('iframe'); f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture'; f.title = 'TikTok';
     f.src = this.src(id).replace(/autoplay=\d/, 'autoplay=' + (auto ? 1 : 0)); return f },
@@ -2246,10 +2250,12 @@ function renderTT(){
   const au = S.look.ttAuto !== false; $('#ttAuto').classList.toggle('on', au);
   $('#ttAuto').title = au ? 'Auto scroll is on: the next video plays when one ends' : 'Auto scroll is off: each video loops';
   setHTML($('#ttInfo'), c ? `<div class="tta">${c.avatar ? `<img src="${esc(c.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>@${esc(c.author)}</b><span>${esc(c.nick || '')}</span></div></div>`
-    + (c.desc ? `<p class="ttd">${esc(c.desc).replace(/(^|\s)(#[^\s#]+)/g, '$1<i>$2</i>')}</p>` : '')
+    + (c.desc ? `<p class="ttd ${TT.capOpen ? 'open' : ''}">${esc(c.desc).replace(/(^|\s)(#[^\s#]+)/g, '$1<i>$2</i>')}</p><button class="ttmore" data-tt="more">${TT.capOpen ? 'See less' : 'See more'}</button>` : '')
     + (c.music ? `<div class="ttm">${TTI.note}<span>${esc(c.music)}</span></div>` : '')
     + `<div class="tts"><span title="Views">${TTI.plays}${ttN(c.plays)}</span></div>`
     + `<button class="abtn" data-tt="ext">Open in TikTok</button>` : '');
+  // "See more" only when the caption is cut
+  const cap = $('#ttInfo .ttd'), more = $('#ttInfo .ttmore'); if (cap && more) more.hidden = !TT.capOpen && cap.scrollHeight <= cap.clientHeight + 2;
   const act = (k, ic, n, title, cls = '') => `<button class="tta2 ${cls}" data-ta="${k}" title="${title}"><i>${ic}</i><span>${ttN(n)}</span></button>`;
   setHTML($('#ttActs'), c ? act('like', TTI.heart, c.likes, c.liked ? 'Unlike' : 'Like', (c.liked ? 'liked' : '') + (TT.busy.like ? ' busy' : ''))
     + act('comment', TTI.talk, c.comments, 'Comments', $('#ttSide').classList.contains('com') ? 'on' : '')
@@ -2297,6 +2303,7 @@ $('#ttStage').addEventListener('click', e => {
   if (a === 'foryou') TT.feed('foryou');
   else if (a === 'search' && TT.q) TT.feed('search', TT.q);
   else if (a === 'login') openAccounts();
+  else if (a === 'more'){ TT.capOpen = !TT.capOpen; renderTT() }
   else if (a === 'ext') openExternal(c ? `https://www.tiktok.com/@${c.author}/video/${c.id}` : 'https://www.tiktok.com/foryou');
   else if (a === 'show'){ invoke('tiktok_show', {on: true}).catch(() => {}); toast('Answer TikTok there, then press Done') }
   else if (a === 'done'){ invoke('tiktok_show', {on: false}).catch(() => {}); TT.feed(TT.mode, TT.q) }
