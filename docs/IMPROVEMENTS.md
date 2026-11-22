@@ -37,7 +37,7 @@ Các lỗi iBaila từng gặp trên PC, dùng làm checklist test:
 
 - [x] ~~File cài đặt thay cho zip~~ (giữ bản portable, tự cập nhật thay cho file cài)
 - [x] Tự cập nhật
-- [ ] Ký số file exe để SmartScreen không cảnh báo (đã chuẩn bị SignPath, chờ duyệt)
+- [ ] Ký số file exe để SmartScreen không cảnh báo (SignPath Foundation đã từ chối vì dự án chưa đủ người dùng: nộp lại sau, hoặc mua chứng chỉ Certum Open Source; workflow vẫn giữ bước ký SignPath, chỉ chạy khi có `SIGNPATH_*`)
 
 ## Ưu tiên 4 — Tính năng còn thiếu
 

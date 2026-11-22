@@ -45,6 +45,15 @@ impl Mode {
 /// e.g. after Win+D / "show desktop".
 static FRONT: AtomicBool = AtomicBool::new(false);
 static MODE: AtomicU8 = AtomicU8::new(Mode::Desktop as u8);
+/// The Windows desktop is up: the taskbar and the desktop icon list exist. Right after sign-in
+/// Wallplayer can start before Explorer has built them, and then cannot go behind the icons yet.
+pub fn shell_ready() -> bool {
+    unsafe {
+        let tray = FindWindowW(w!("Shell_TrayWnd"), PCWSTR::null()).map(|h| !h.is_invalid()).unwrap_or(false);
+        tray && find_icons().is_some()
+    }
+}
+
 /// Desktop icons (incl. Recycle Bin) are hidden while this is true; the watcher keeps it that way.
 static ICONS_HIDE: AtomicBool = AtomicBool::new(false);
 

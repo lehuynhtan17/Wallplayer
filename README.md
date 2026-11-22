@@ -47,7 +47,7 @@ See the [Code signing policy](CODE_SIGNING.md).
 ## Quick start
 
 1. Unzip `Wallplayer-Windows-x64.zip` and keep the files in the `Wallplayer` folder together.
-2. Run `Wallplayer.exe`. It needs the Microsoft Edge **WebView2 Runtime**, which Windows 11 and most Windows 10 PCs already have.
+2. Run `Wallplayer.exe` (Windows may show *Windows protected your PC* because the exe is not signed yet: *More info → Run anyway*, or right-click → Properties → *Unblock* first). It needs the Microsoft Edge **WebView2 Runtime**, which Windows 11 and most Windows 10 PCs already have.
 3. Press **Ctrl + Alt + Space** and search. Everything else is in the tray icon and in Settings (the ··· button at the end of the player bar). [`GUIDE.txt`](GUIDE.txt) is the full user guide ([Vietnamese](HUONG-DAN.txt)).
 
 > Press **Ctrl + Shift + D** to run the built-in self-test if something Windows-specific misbehaves.
@@ -96,7 +96,7 @@ Preview the UI without building: open `ui/index.html` in Chrome/Edge.
 
 ## Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+Releases are **not code-signed yet**, so Windows SmartScreen may warn the first time (*More info → Run anyway*). The SignPath Foundation open-source programme declined the project for now; signing will come back when there is a certificate.
 Committers and reviewers: [lehuynhtan17](https://github.com/lehuynhtan17). Approvers: [lehuynhtan17](https://github.com/lehuynhtan17).
 Details in [`CODE_SIGNING.md`](CODE_SIGNING.md).
 
@@ -108,7 +108,7 @@ This program will not transfer any information to other networked systems unless
 
 1. Write the release notes under a new `## x.y.z` heading in `CHANGELOG.md` and set the same version in `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`.
 2. Push to `main`. GitHub Actions builds `Wallplayer.exe`; download the build from the run to test it on Windows.
-3. Open **Actions → Build and release → Run workflow**, tick *Publish a release* (or push a tag `Vx.y.z`). The workflow builds again, sends the exe to SignPath for signing (once it is set up), waits for the approval, and publishes release `Vx.y.z` with the notes.
+3. Open **Actions → Build and release → Run workflow**, tick *Publish a release* (or push a tag `Vx.y.z`). The workflow builds again and publishes release `Vx.y.z` with the notes (it can also sign through SignPath if the project is accepted later: the step only runs when the `SIGNPATH_*` settings exist).
 
 ## License
 

@@ -1,6 +1,6 @@
 # Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+**Status: releases are not code-signed yet.** The SignPath Foundation open-source programme declined the project for now (November 2026). The policy below applies again once a certificate is in place (a later SignPath application or a certificate bought by the maintainer).
 
 ## What is signed
 
@@ -9,7 +9,7 @@ Only `Wallplayer.exe`, built from this repository by the GitHub Actions workflow
 Nothing built on a personal machine is signed, and no third-party binary is signed
 under this project.
 
-The signed file is published in [Releases](https://github.com/lehuynhtan17/Wallplayer/releases)
+The file is published in [Releases](https://github.com/lehuynhtan17/Wallplayer/releases)
 as `Wallplayer-Windows-x64.zip`.
 
 ## Team roles
@@ -21,8 +21,8 @@ as `Wallplayer-Windows-x64.zip`.
 
 - Committers may change the source code directly.
 - Every change from someone outside the team (pull requests) is reviewed by a committer before it is merged.
-- Every signing request is approved by hand by an approver in SignPath.
-- All team members use multi-factor authentication for GitHub and SignPath.
+- Every signing request is approved by hand by an approver.
+- All team members use multi-factor authentication for GitHub and the signing service.
 
 ## Privacy
 

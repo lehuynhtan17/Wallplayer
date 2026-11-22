@@ -20,7 +20,7 @@ File ra: `src-tauri/target/release/wallplayer.exe`. Khi phát hành phải đi k
 
 ## Phát hành
 - Ghi release notes (tiếng Anh, kiểu "New / Changed / Fixed") dưới `## x.y.z` trong `CHANGELOG.md`, đổi version ở `src-tauri/Cargo.toml` và `src-tauri/tauri.conf.json` (phải giống nhau), push lên `main`.
-- GitHub Actions (`.github/workflows/build.yml`) build trên Windows; Tấn thử bản build rồi bấm **Run workflow** (hoặc Claude đẩy tag `Vx.y.z` lên, khi Tấn bảo publish) để phát hành: workflow ký qua SignPath (khi đã có `SIGNPATH_*`), chờ Tấn duyệt, rồi tạo release `Vx.y.z` với zip `Wallplayer-Windows-x64.zip` (thư mục `Wallplayer/` bên trong) và notes từ CHANGELOG. Chi tiết: `docs/SIGNPATH-SETUP.md`.
+- GitHub Actions (`.github/workflows/build.yml`) build trên Windows; Tấn thử bản build rồi bấm **Run workflow** (hoặc Claude đẩy tag `Vx.y.z` lên, khi Tấn bảo publish) để phát hành: workflow (bước ký SignPath chỉ chạy khi có `SIGNPATH_*`; SignPath Foundation đã từ chối dự án 11/2026 nên hiện bản phát hành không ký số) rồi tạo release `Vx.y.z` với zip `Wallplayer-Windows-x64.zip` (thư mục `Wallplayer/` bên trong) và notes từ CHANGELOG. Chi tiết: `docs/SIGNPATH-SETUP.md`.
 - App tự cập nhật từ release mới nhất (`src-tauri/src/update.rs`): tên asset và thư mục trong zip không được đổi. Tag dạng `V1.0.3`.
 
 ## Lưu ý

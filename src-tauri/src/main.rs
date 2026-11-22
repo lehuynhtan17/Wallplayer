@@ -844,7 +844,28 @@ fn main() {
             apply_mode(&handle);
             desktop::set_icons_hidden(hide_on);
             // the web engine dies → start again instead of sitting empty in the tray
-            guard::log(&handle, "started");
+            // Started by Windows at sign-in: Explorer may not have built the desktop yet. Wait for it
+            // (up to 2 minutes), then go behind the icons again — otherwise the skin could stay a plain
+            // window behind everything, looking as if Wallplayer never opened.
+            let at_signin = std::env::args().any(|a| a == settings::AUTOSTART_ARG);
+            guard::log(&handle, if at_signin { "started with Windows" } else { "started" });
+            if let Some(fix) = settings::heal_autostart() {
+                guard::log(&handle, &fix);
+            }
+            if at_signin {
+                let h3 = handle.clone();
+                std::thread::spawn(move || {
+                    let t0 = std::time::Instant::now();
+                    while !desktop::shell_ready() && t0.elapsed() < std::time::Duration::from_secs(120) {
+                        std::thread::sleep(std::time::Duration::from_millis(500));
+                    }
+                    // Explorer keeps rebuilding the desktop layer for a moment after it appears
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    guard::log(&h3, &format!("desktop ready after {:.1}s: placing the skin", t0.elapsed().as_secs_f32()));
+                    let h4 = h3.clone();
+                    let _ = h3.run_on_main_thread(move || apply_mode(&h4));
+                });
+            }
             guard::watch(&win, true);
 
             // leave peek when focus goes elsewhere

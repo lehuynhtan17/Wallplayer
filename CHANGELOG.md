@@ -3,6 +3,15 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.12
+
+### Fixed
+- "Start with Windows" could be on in Wallplayer while Windows never started it: the setting pointed to an older copy or folder, or it had been switched off in Windows' own list (Task Manager → Startup apps). Wallplayer now shows it on only when Windows will really start this copy, points it to the current folder by itself at every start, and turning it on also switches it back on in Windows' list.
+- Started at sign-in, Wallplayer waits until the desktop is ready (taskbar and icons are up) before going behind the icons, instead of trying too early and staying a plain window.
+
+### Changed
+- Releases are not code-signed for now (the SignPath Foundation programme declined the project). README and the guides explain the SmartScreen warning and how to unblock the exe.
+
 ## 1.0.11
 
 ### New
