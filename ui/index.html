@@ -1515,7 +1515,7 @@ const SET_TABS = [
   ['island', 'Dynamic Island', '#3a3a3f|#151517', 'collapse mini player top đảo thu gọn'],
   ['layout', 'Layout', '#a3a3aa|#6e6e76', 'player bar search cover flow playlist tray bố cục thanh khay'],
   null,
-  ['perf', 'Performance', '#ffd23d|#e8a90c', 'power battery saver energy pin tiết kiệm năng lượng'],
+  ['perf', 'Performance', '#ffd23d|#e8a90c', 'power battery saver energy pin tiết kiệm năng lượng startup priority khởi động ưu tiên'],
   ['acc', 'Accounts', '#5aa8ff|#2a6fdc', 'youtube soundcloud spotify sign in đăng nhập tài khoản'],
   ['general', 'General', '#a3a3aa|#6e6e76', 'language english vietnamese updates shortcut quit privacy desktop icons ngôn ngữ tiếng việt cập nhật phím tắt thoát']
 ];
@@ -1583,12 +1583,13 @@ function renderAppPop(){
   } else if (tab === 'perf'){
     body = grp('Power', col('Mode', chips('pwr', PWR), {auto: 'Lighter by itself on battery or with Energy Saver on.', full: 'Always full quality, even on battery.', saver: 'Always lighter: 30 fps, video up to 720p.'}[L.pwr || 'auto'])
         + row('Rest behind full-screen and maximised windows', tg(L.pcov !== false, 'data-t="pcov"'))
-        + `<div class="sr"><span class="sl"><small id="pwrNow">${pwrNow()}</small></span></div>`);
+        + `<div class="sr"><span class="sl"><small id="pwrNow">${pwrNow()}</small></span></div>`)
+      + (T ? grp('Startup', row('High priority', tg(!!S.ui.autostart_high, 'data-sa="autohigh"'), 'Opens first when you sign in, before other apps, and loads at high priority')) : '');
   } else if (tab === 'acc'){
     body = `<div id="accSlot"></div>`;
   } else {
     body = grp('Language', `<div class="sr"><div class="chips"><button class="chip ${I18N.lang === 'en' ? 'on' : ''}" data-lang="en">English</button><button class="chip ${I18N.lang === 'vi' ? 'on' : ''}" data-lang="vi">Tiếng Việt</button></div></div>`)
-      + (T ? grp('Desktop', row('Start with Windows', tg(!!S.ui.autostart, 'data-sa="autostart"'), 'Opens by itself when you turn on the PC') + row('High priority', tg(!!S.ui.autostart_high, 'data-sa="autohigh"'), 'Opens first when you sign in, before other apps') + row('Behind desktop icons', tg(S.ui.wallpaper_mode, 'data-sa="behind"'), 'Off: an interactive desktop window')) : '')
+      + (T ? grp('Desktop', row('Start with Windows', tg(!!S.ui.autostart, 'data-sa="autostart"'), 'Opens by itself when you turn on the PC') + row('Behind desktop icons', tg(S.ui.wallpaper_mode, 'data-sa="behind"'), 'Off: an interactive desktop window')) : '')
       + grp('Search from anywhere', row('Shortcut', `<span class="keys keybind"><button class="kbtn ${S.binding ? 'rec' : ''}" id="bindBtn">${S.binding ? 'Press a key or mouse button…' : keyLabel(S.searchKey)}</button><button class="chip" id="bindReset" title="Back to Ctrl Alt Space">Reset</button></span>`))
       + grp('Updates', row('Check when Wallplayer starts', tg(UP.auto, 'data-t="autoup"')) + `<div class="sr col"><span class="sl"><small id="upNow">${upText()}</small></span><div class="chips" id="upBtns">${upBtns()}</div></div>`)
       + grp('', row('Privacy policy', `<button class="abtn" id="privBtn">Open</button>`) + row('Self-test', `<button class="abtn" id="selfTestBtn">Run (Ctrl+Shift+D)</button>`) + (T ? row('Quit Wallplayer', `<button class="abtn warn" data-sa="quit">Quit</button>`) : ''));

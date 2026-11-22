@@ -142,6 +142,8 @@ Esc or a click outside closes it.
   720p). "Rest behind full-screen and maximised windows": Wallplayer stops drawing and pauses the
   background video while a game, a film or a maximised window covers the screen; the music keeps
   playing. When the music stops, the light slows down and stops drawing. "Now: …" shows the mode.
+  "High priority" (Startup): opens Wallplayer as soon as you sign in, before the other apps, and loads
+  it at high priority (see "Start with Windows" below).
 - Accounts: see ACCOUNTS above.
 - General: Language (English or Tiếng Việt, also the tray menu; Wallplayer uses Vietnamese when Windows
   does), Behind desktop icons, Search from anywhere, Updates, Privacy policy, Self-test, Quit.
@@ -203,14 +205,14 @@ ON THE DESKTOP (tray icon, right-click)
 - "Start with Windows": starts Wallplayer when you sign in (also in Settings → General). It waits for the
   desktop to be ready before going behind the icons. If you move the Wallplayer folder, open Wallplayer once
   from the new place and it points Windows to it.
-- "High priority" (under Start with Windows): Wallplayer opens as soon as you sign in, before the other
+- "High priority" (Settings → Performance): Wallplayer opens as soon as you sign in, before the other
   startup apps (Windows normally starts them one by one, with a delay), and runs at high priority until
   the skin is up, then goes back to normal. It uses a Task Scheduler task of your own account
   ("Wallplayer - <your name>"), so no administrator rights are needed. Turn it off to go back to the
   normal start.
 
 IF WALLPLAYER DOES NOT OPEN WHEN YOU SIGN IN
-1. In Settings → General, turn "Start with Windows" off and on again, or turn on "High priority". This also switches it back on in
+1. In Settings → General, turn "Start with Windows" off and on again, or turn on "High priority" in Settings → Performance. This also switches it back on in
    Windows' own list (Task Manager → Startup apps, or Settings → Apps → Startup), where it may be off.
 2. Wallplayer is not code-signed yet, and files from a downloaded zip are marked as coming from the
    internet. Right-click Wallplayer.exe → Properties → tick "Unblock" → OK, so Windows does not hold it back.

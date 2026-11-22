@@ -76,7 +76,7 @@ window.WP_VI = {
     'Use album-art wallpaper': 'Dùng ảnh bìa làm hình nền',
     'Behind desktop icons': 'Nằm sau icon desktop', 'Hide desktop icons': 'Ẩn icon desktop', 'Start with Windows': 'Mở cùng Windows',
     'Opens by itself when you turn on the PC': 'Tự mở khi bật máy', 'High priority': 'Ưu tiên cao',
-    'Opens first when you sign in, before other apps': 'Mở đầu tiên khi đăng nhập, trước các app khác',
+    'Opens first when you sign in, before other apps, and loads at high priority': 'Mở đầu tiên khi đăng nhập, trước các app khác, và tải với ưu tiên cao', 'Startup': 'Khởi động',
     'Wallplayer opens first when you sign in': 'Wallplayer sẽ mở đầu tiên khi đăng nhập', 'Wallplayer opens with the other startup apps': 'Wallplayer mở cùng lúc với các app khởi động khác', 'Wallplayer opens when Windows starts': 'Wallplayer sẽ tự mở cùng Windows',
     'Wallplayer no longer opens with Windows': 'Wallplayer không còn tự mở cùng Windows', 'Recent playlists': 'Playlist gần đây',
     'Save to YouTube Music': 'Lưu vào YouTube Music', 'Save this list to YouTube Music': 'Lưu danh sách này vào YouTube Music',

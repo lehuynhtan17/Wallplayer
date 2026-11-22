@@ -70,7 +70,7 @@ fn task_xml(user: &str) -> Result<String, String> {
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Author>Wallplayer</Author>
-    <Description>Starts Wallplayer when you sign in, before the other startup apps. Turn it off in Wallplayer: Settings, General, High priority.</Description>
+    <Description>Starts Wallplayer when you sign in, before the other startup apps. Turn it off in Wallplayer: Settings, Performance, High priority.</Description>
   </RegistrationInfo>
   <Triggers>
     <LogonTrigger><Enabled>true</Enabled><UserId>{user}</UserId></LogonTrigger>

@@ -139,7 +139,7 @@ fn set_autostart(app: AppHandle, on: bool) -> UiState {
     ui_state(&app)
 }
 
-/// Settings → General → "High priority": start as soon as you sign in, before the other startup apps.
+/// Settings → Performance → "High priority": start as soon as you sign in, before the other startup apps.
 #[tauri::command]
 fn set_autostart_high(app: AppHandle, on: bool) -> Result<UiState, String> {
     let r = settings::set_autostart_high(on);
