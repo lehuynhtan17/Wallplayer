@@ -3,6 +3,11 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.14
+
+### Fixed
+- "Check for updates" could fail with "GitHub answered 403 Forbidden". GitHub's API answers only 60 questions an hour per internet address without an account, and many people can share one address (a VPN such as Cloudflare WARP, a mobile network, an office). Wallplayer now falls back to the release page, which has no such limit.
+
 ## 1.0.13
 
 ### New

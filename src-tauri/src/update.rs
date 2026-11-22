@@ -121,7 +121,50 @@ fn client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder().user_agent(UA).timeout(Duration::from_secs(60)).build().map_err(|e| e.to_string())
 }
 
+/// The newest release. GitHub's API allows only 60 questions an hour per internet address without an
+/// account, and many people can share one address (a VPN such as Cloudflare WARP, a mobile network,
+/// an office): then it answers 403. The release page itself has no such limit, so ask it instead.
 async fn latest() -> Result<Release, String> {
+    match latest_api().await {
+        Ok(r) => Ok(r),
+        Err(e) if e.starts_with("No public release") => Err(e),
+        Err(e) => latest_web().await.map_err(|e2| {
+            if e.contains("403") || e.contains("429") {
+                format!("GitHub is limiting update checks from your network right now. Try again later ({e2})")
+            } else {
+                e
+            }
+        }),
+    }
+}
+
+/// Without the API: /releases/latest redirects to /releases/tag/<tag>; the notes come from that tag's
+/// CHANGELOG.md, the size from the download itself.
+async fn latest_web() -> Result<Release, String> {
+    let c = reqwest::Client::builder()
+        .user_agent(UA)
+        .timeout(Duration::from_secs(30))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|e| e.to_string())?;
+    let r = c.get(format!("https://github.com/{REPO}/releases/latest")).send().await.map_err(|e| e.to_string())?;
+    let page = r.headers().get(reqwest::header::LOCATION).and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+    let tag = page.split("/releases/tag/").nth(1).unwrap_or("").to_string();
+    if tag.is_empty() || !tag.chars().all(|ch| ch.is_ascii_alphanumeric() || ".-_".contains(ch)) {
+        return Err(format!("the release page answered {}", r.status()));
+    }
+    let ver = tag.trim_start_matches(['v', 'V']);
+    let notes = match client()?.get(format!("https://raw.githubusercontent.com/{REPO}/{tag}/CHANGELOG.md")).send().await {
+        Ok(r) if r.status().is_success() => {
+            let md = r.text().await.unwrap_or_default();
+            md.split(&format!("## {ver}\n")).nth(1).map(|t| t.split("\n## ").next().unwrap_or("").trim().to_string()).unwrap_or_default()
+        }
+        _ => String::new(),
+    };
+    Ok(Release { zip: format!("https://github.com/{REPO}/releases/download/{tag}/{ASSET}"), tag, notes, page, size: 0 })
+}
+
+async fn latest_api() -> Result<Release, String> {
     let url = format!("https://api.github.com/repos/{REPO}/releases/latest");
     let r = client()?.get(url).header("Accept", "application/vnd.github+json").send().await.map_err(|e| e.to_string())?;
     if r.status().as_u16() == 404 {
@@ -178,15 +221,17 @@ async fn download_and_stage(rel: &Release) -> Result<(), String> {
     if !rel.zip.starts_with(&prefix) {
         return Err("Unexpected download address".into());
     }
-    if rel.size == 0 || rel.size > 80 * 1024 * 1024 {
-        return Err("Unexpected download size".into());
-    }
     let r = client()?.get(&rel.zip).send().await.map_err(|e| e.to_string())?;
     if !r.status().is_success() {
         return Err(format!("Download failed ({})", r.status()));
     }
+    // size from the API, or (found through the release page) from the download itself
+    let size = if rel.size > 0 { rel.size } else { r.content_length().unwrap_or(0) };
+    if size == 0 || size > 80 * 1024 * 1024 {
+        return Err("Unexpected download size".into());
+    }
     let bytes = r.bytes().await.map_err(|e| e.to_string())?;
-    if bytes.len() as u64 != rel.size {
+    if bytes.len() as u64 != size {
         return Err("Download was incomplete".into());
     }
 
