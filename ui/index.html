@@ -192,7 +192,7 @@ img{display:block}
 .qbtn:hover{background:rgba(255,255,255,.16)}
 .qbtn.spin{transform:rotate(360deg)}
 .qbtn .ico{width:1.3rem;height:1.3rem}
-#qlist{list-style:none;height:calc(100% - 6rem);overflow-y:auto;padding-right:1.4rem;padding-left:.8rem;margin-left:-.8rem;   /* room for the rows' rounded highlight, which reaches .7rem past the text */
+#qlist{list-style:none;height:calc(100% - 6rem);overflow-y:auto;padding-right:1.4rem;padding-left:1.4rem;margin-left:-1.4rem;   /* room for the rows' rounded highlight, which reaches .7rem past the text */
   border-right:1px solid rgba(255,255,255,.28);scrollbar-width:none;
   -webkit-mask-image:linear-gradient(to bottom,#000 78%,transparent);mask-image:linear-gradient(to bottom,#000 78%,transparent);transition:opacity .3s}
 #qlist::-webkit-scrollbar{display:none}
@@ -476,6 +476,17 @@ img{display:block}
 #app.lypos-bottom #lyrics2{top:auto;bottom:2.2%;height:13rem;width:84rem}
 #app.lypos-bottom #lyrics2 .ln{top:auto;bottom:0}
 #app.lypos-left #lyrics2 .tr2,#app.lypos-right #lyrics2 .tr2{margin-left:0}
+/* portrait screens: Center / Left / Right = lyrics right under the cover flow (playlist moves down), Bottom = under the playlist */
+@media (max-aspect-ratio:5/4){
+  #app.lypos-center:not(.lyricsmode) #flowWrap,#app.lypos-left:not(.lyricsmode) #flowWrap,#app.lypos-right:not(.lyricsmode) #flowWrap{top:29%;height:23%}
+  #app.lypos-center:not(.lyricsmode) #lyrics2,#app.lypos-left:not(.lyricsmode) #lyrics2,#app.lypos-right:not(.lyricsmode) #lyrics2{opacity:1;top:52.5%;height:15rem;width:100rem}
+  #app.lypos-left:not(.lyricsmode) #lyrics2{left:6rem;right:auto;transform:none}
+  #app.lypos-right:not(.lyricsmode) #lyrics2{left:auto;right:6rem;transform:none;text-align:right}
+  #app.lypos-right:not(.lyricsmode) #lyrics2 .al{--apo:100%}#app.lypos-right:not(.lyricsmode) #lyrics2 .al.dots{--apj:flex-end}#app.lypos-right:not(.lyricsmode) #lyrics2 .tr2{margin-left:auto;margin-right:0}
+  #app.lypos-center:not(.lyricsmode) #lyrics2 .ln,#app.lypos-left:not(.lyricsmode) #lyrics2 .ln,#app.lypos-right:not(.lyricsmode) #lyrics2 .ln{top:auto;bottom:0}
+  #app.lypos-center:not(.lyricsmode) #queue,#app.lypos-left:not(.lyricsmode) #queue,#app.lypos-right:not(.lyricsmode) #queue{top:61.5%!important}
+  #app.lypos-left #queue:not(.off){opacity:1;pointer-events:auto}
+  #app.lypos-bottom #lyrics2{top:80.6%;bottom:auto;height:15rem;width:100rem}}
 /* lyric effects */
 #app.lfx-line #lyrics2 .ln,#app.lfx-bounce #lyrics2 .ln,#app.lfx-glow #lyrics2 .ln,#app.lfx-type #lyrics2 .ln,#app.lfx-pop #lyrics2 .ln,#app.lfx-karaoke #lyrics2 .ln,#app.lfx-shake #lyrics2 .ln,#app.lfx-jiggle #lyrics2 .ln,#app.lfx-glitch #lyrics2 .ln,#app.lfx-wave #lyrics2 .ln,#app.lfx-zoom #lyrics2 .ln,#app.lfx-slide #lyrics2 .ln{font-size:calc(var(--lys) * .7);line-height:1.12}
 #app.lfx-line #lyrics2 .w2,#app.lfx-bounce #lyrics2 .w2,#app.lfx-glow #lyrics2 .w2,#app.lfx-pop #lyrics2 .w2,#app.lfx-karaoke #lyrics2 .w2,#app.lfx-shake #lyrics2 .w2,#app.lfx-jiggle #lyrics2 .w2,#app.lfx-glitch #lyrics2 .w2,#app.lfx-wave #lyrics2 .w2,#app.lfx-zoom #lyrics2 .w2,#app.lfx-slide #lyrics2 .w2{display:inline-block;max-height:none;overflow:visible;margin:0 .13em;filter:none}
@@ -1800,7 +1811,8 @@ function apBuild(){
 function apMove(r){
   const box = $('#lyrics2'); AP.cur = r;
   const R0 = AP.rows[Math.max(0, r)]; if (!R0) return;
-  const y = box.clientHeight * (app.classList.contains('lypos-bottom') ? .2 : .3) - R0.el.offsetTop;
+  const low = app.classList.contains('lypos-bottom') || (!app.classList.contains('lyricsmode') && matchMedia('(max-aspect-ratio:5/4)').matches);   // a short strip of lyrics
+  const y = box.clientHeight * (low ? .2 : .3) - R0.el.offsetTop;
   AP.rows.forEach((R, k) => {
     const d = k - r, el = R.el;
     el.classList.toggle('on', k === r); el.classList.toggle('past', k < r); el.classList.toggle('far', Math.abs(d) > 8);
