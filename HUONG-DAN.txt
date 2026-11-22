@@ -108,7 +108,8 @@ cũng được), nội dung bên phải. Esc hoặc bấm ra ngoài để đóng
   vị trí Top / Top left / Top right / Bottom left / Bottom right.
 - Lời bài hát: Style Player (karaoke) hoặc YouTube captions (phụ đề nền đen);
   14 hiệu ứng: Stack, Apple Music, Line, Bounce, Typewriter, Glow, và kiểu CapCut: Pop, Karaoke fill, Shake,
-  Jiggle, Glitch, Wave, Zoom, Slide; vị trí Center / Left / Right / Bottom; 5 font, 3 cỡ chữ,
+  Jiggle, Glitch, Wave, Zoom, Slide; vị trí Center / Left / Right / Bottom (màn hình dọc: Center / Left / Right
+  đặt lời ngay dưới cover flow, Bottom đặt dưới playlist); 5 font, 3 cỡ chữ,
   chữ thường / Hoa đầu / IN HOA.
 - Viền sáng: bật/tắt; Colour from = Album cover hoặc Live video (màu thật của video đang chiếu);
   11 hiệu ứng (rê chuột lên tên để xem trước); Where: cả viền / cạnh dưới / cạnh trên / các góc;

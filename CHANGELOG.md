@@ -3,6 +3,11 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.15
+
+### Changed
+- Portrait screens: lyrics sit right under the cover flow when the position is Center, Left or Right, and under the playlist when it is Bottom; the playlist moves down to make room, and its highlight has more space.
+
 ## 1.0.14
 
 ### Fixed

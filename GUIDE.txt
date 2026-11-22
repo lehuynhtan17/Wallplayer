@@ -132,7 +132,8 @@ Esc or a click outside closes it.
 - Clock: on / off; 7 styles; position Top / Top left / Top right / Bottom left / Bottom right.
 - Lyrics: Player style (karaoke) or YouTube captions; 14 effects (Stack, Apple Music, Line, Bounce,
   Typewriter, Glow, Pop, Karaoke fill, Shake, Jiggle, Glitch, Wave, Zoom, Slide); position Center / Left /
-  Right / Bottom; 5 fonts, 3 sizes, lower case / Title / UPPER CASE.
+  Right / Bottom (on a portrait screen, Center / Left / Right put the lyrics right under the cover flow and
+  Bottom puts them under the playlist); 5 fonts, 3 sizes, lower case / Title / UPPER CASE.
 - Ambient Light (the edge light): on / off; colour from the album cover or the live video; 11 effects
   (Comet, Pulse, Spectrum, Rainbow, Aurora, Fire, Lava, Snake, Sparkle, Neon, Wave) — point at one to
   preview it; Where: whole frame, bottom, top or corners; Light on each display; Intensity and Blend.
