@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/thumbnail.png" alt="Wallplayer" width="100%">
+  <img src="docs/banner.jpg" alt="Wallplayer — your wallpaper, playing" width="100%">
 </p>
 
 <h3 align="center">Your wallpaper, playing.</h3>
@@ -118,4 +118,4 @@ This program will not transfer any information to other networked systems unless
 
 - Genius, YouTube InnerTube and Google Translate use unofficial endpoints and may change at any time.
 - Google lyrics cannot be automated (captcha); the app only opens the browser.
-- Design thumbnail: [`docs/thumbnail.png`](docs/thumbnail.png).
+- Banner: [`docs/banner.jpg`](docs/banner.jpg) (README) and [`docs/social-preview.jpg`](docs/social-preview.jpg) (1280×640, for the repo's social preview). Brand type: Sora for titles, Instrument Sans for text, DM Mono for labels.
