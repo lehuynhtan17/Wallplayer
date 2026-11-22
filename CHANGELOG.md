@@ -3,6 +3,15 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.13
+
+### New
+- Settings → General → "High priority" (under Start with Windows): Wallplayer opens as soon as you sign in, before the other startup apps, instead of waiting for its turn in Windows' startup list. It uses a Task Scheduler task of your own account, so no administrator rights are needed.
+
+### Changed
+- Started with Windows, Wallplayer and its web engine run at high priority until the skin is up, then go back to normal so games and other apps aren't slowed down.
+- Started at sign-in before the desktop is ready, the skin stays hidden until it can go behind the icons, instead of showing up as a plain window.
+
 ## 1.0.12
 
 ### Fixed

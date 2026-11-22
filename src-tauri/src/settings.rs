@@ -95,7 +95,7 @@ fn exe_of(cmd: &str) -> String {
     }
 }
 
-fn same_path(a: &str, b: &std::path::Path) -> bool {
+pub(crate) fn same_path(a: &str, b: &std::path::Path) -> bool {
     let norm = |s: &str| s.trim_start_matches(r"\\?\").replace('/', "\\").to_lowercase();
     norm(a) == norm(&b.display().to_string())
 }
@@ -116,17 +116,58 @@ fn approved() -> bool {
         .unwrap_or(true)
 }
 
-/// On only when Windows will really start THIS copy of Wallplayer at sign-in.
+/// On only when Windows will really start THIS copy of Wallplayer at sign-in (Run list, or the
+/// High priority task).
 pub fn autostart_enabled() -> bool {
-    match (run_value(), std::env::current_exe()) {
+    let run = match (run_value(), std::env::current_exe()) {
         (Some(v), Ok(me)) => same_path(&exe_of(&v), &me) && approved(),
         _ => false,
+    };
+    run || crate::boot::high_on()
+}
+
+/// Takes Wallplayer out of Windows' Run list (and its Startup apps switch).
+fn remove_run() -> std::io::Result<()> {
+    if let Ok(k) = RegKey::predef(HKEY_CURRENT_USER).open_subkey_with_flags(APPROVED_KEY, winreg::enums::KEY_ALL_ACCESS) {
+        let _ = k.delete_value(RUN_NAME);
+    }
+    let (key, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(RUN_KEY)?;
+    match key.delete_value(RUN_NAME) {
+        Ok(_) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e),
     }
 }
 
 pub fn set_autostart(on: bool) -> std::io::Result<()> {
-    let (key, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(RUN_KEY)?;
+    if !on {
+        let _ = crate::boot::set_high(false);
+        return remove_run();
+    }
+    if crate::boot::task_exists() {
+        // High priority is on: point its task at this copy rather than adding a second start
+        if crate::boot::high_on() || crate::boot::set_high(true).is_ok() {
+            return remove_run();
+        }
+    }
+    write_run()
+}
+
+/// "Start with Windows" → "High priority": the sign-in task instead of the Run list. Turning it off
+/// keeps Start with Windows on, the normal way.
+pub fn set_autostart_high(on: bool) -> Result<(), String> {
     if on {
+        crate::boot::set_high(true)?;
+        remove_run().map_err(|e| e.to_string())
+    } else {
+        crate::boot::set_high(false)?;
+        write_run().map_err(|e| e.to_string())
+    }
+}
+
+fn write_run() -> std::io::Result<()> {
+    let (key, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(RUN_KEY)?;
+    {
         key.set_value(RUN_NAME, &run_command()?)?;
         // turning it on here also turns Windows' own switch back on (it may have been switched off
         // in Task Manager or Settings, which silently keeps the app from starting)
@@ -134,21 +175,22 @@ pub fn set_autostart(on: bool) -> std::io::Result<()> {
         let on_bytes = winreg::RegValue { bytes: vec![2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], vtype: winreg::enums::RegType::REG_BINARY };
         let _ = ok.set_raw_value(RUN_NAME, &on_bytes);
         Ok(())
-    } else {
-        if let Ok(k) = RegKey::predef(HKEY_CURRENT_USER).open_subkey_with_flags(APPROVED_KEY, winreg::enums::KEY_ALL_ACCESS) {
-            let _ = k.delete_value(RUN_NAME);
-        }
-        match key.delete_value(RUN_NAME) {
-            Ok(_) => Ok(()),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            Err(e) => Err(e),
-        }
     }
 }
 
 /// At start: if "Start with Windows" is on but points to another copy or folder (the folder was moved,
 /// or an older copy turned it on), point it at this copy. Returns what was fixed, for the log.
 pub fn heal_autostart() -> Option<String> {
+    if crate::boot::task_exists() {
+        // started by the High priority task: never also from the Run list (that would open it twice)
+        let twice = run_value().is_some() && remove_run().is_ok();
+        let fix = crate::boot::heal();
+        return match (fix, twice) {
+            (Some(f), _) => Some(f),
+            (None, true) => Some("removed the normal start: High priority already starts Wallplayer".into()),
+            _ => None,
+        };
+    }
     let v = run_value()?;
     let me = std::env::current_exe().ok()?;
     let old = exe_of(&v);

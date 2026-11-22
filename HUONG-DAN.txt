@@ -230,9 +230,13 @@ CHẾ ĐỘ ĐẶT TRÊN DESKTOP (chuột phải biểu tượng khay)
 - "Start with Windows": tự chạy khi mở máy (cũng bật/tắt được trong Cài đặt → Chung). App đợi desktop sẵn sàng
   rồi mới nằm xuống dưới icon. Nếu chuyển thư mục Wallplayer sang chỗ khác, mở Wallplayer ở chỗ mới một lần là
   Windows sẽ chạy đúng bản đó.
+- "High priority" (Ưu tiên cao, ngay dưới Start with Windows): Wallplayer mở ngay khi đăng nhập, trước các app
+  khởi động khác (bình thường Windows mở chúng lần lượt, có độ trễ), chạy ưu tiên cao cho tới khi giao diện
+  hiện lên rồi trở lại bình thường. App dùng một tác vụ Task Scheduler của chính tài khoản bạn
+  ("Wallplayer - <tên bạn>"), không cần quyền quản trị. Tắt đi là quay về cách mở bình thường.
 
 NẾU MỞ MÁY MÀ WALLPLAYER KHÔNG TỰ CHẠY
-1. Vào Cài đặt → Chung, tắt "Start with Windows" rồi bật lại. Việc này cũng bật lại Wallplayer trong danh sách
+1. Vào Cài đặt → Chung, tắt "Start with Windows" rồi bật lại, hoặc bật "High priority". Việc này cũng bật lại Wallplayer trong danh sách
    của chính Windows (Task Manager → Startup apps, hoặc Settings → Apps → Startup), nơi nó có thể đang bị tắt.
 2. Wallplayer chưa có chữ ký số, và file giải nén từ zip tải về bị Windows đánh dấu "từ Internet". Chuột phải
    Wallplayer.exe → Properties → tick "Unblock" → OK để Windows không giữ nó lại.

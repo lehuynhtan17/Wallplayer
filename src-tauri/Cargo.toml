@@ -1,6 +1,6 @@
 [package]
 name = "wallplayer"
-version = "1.0.12"
+version = "1.0.13"
 description = "Desktop wallpaper music player skin"
 edition = "2021"
 
@@ -51,6 +51,8 @@ windows = { version = "0.58", features = [
   "Win32_System_Power",
   "Win32_System_Memory",
   "Win32_System_Diagnostics_Debug",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_TaskScheduler",
 ] }
 
 [profile.release]

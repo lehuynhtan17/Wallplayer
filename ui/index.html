@@ -1588,7 +1588,7 @@ function renderAppPop(){
     body = `<div id="accSlot"></div>`;
   } else {
     body = grp('Language', `<div class="sr"><div class="chips"><button class="chip ${I18N.lang === 'en' ? 'on' : ''}" data-lang="en">English</button><button class="chip ${I18N.lang === 'vi' ? 'on' : ''}" data-lang="vi">Tiếng Việt</button></div></div>`)
-      + (T ? grp('Desktop', row('Start with Windows', tg(!!S.ui.autostart, 'data-sa="autostart"'), 'Opens by itself when you turn on the PC') + row('Behind desktop icons', tg(S.ui.wallpaper_mode, 'data-sa="behind"'), 'Off: an interactive desktop window')) : '')
+      + (T ? grp('Desktop', row('Start with Windows', tg(!!S.ui.autostart, 'data-sa="autostart"'), 'Opens by itself when you turn on the PC') + row('High priority', tg(!!S.ui.autostart_high, 'data-sa="autohigh"'), 'Opens first when you sign in, before other apps') + row('Behind desktop icons', tg(S.ui.wallpaper_mode, 'data-sa="behind"'), 'Off: an interactive desktop window')) : '')
       + grp('Search from anywhere', row('Shortcut', `<span class="keys keybind"><button class="kbtn ${S.binding ? 'rec' : ''}" id="bindBtn">${S.binding ? 'Press a key or mouse button…' : keyLabel(S.searchKey)}</button><button class="chip" id="bindReset" title="Back to Ctrl Alt Space">Reset</button></span>`))
       + grp('Updates', row('Check when Wallplayer starts', tg(UP.auto, 'data-t="autoup"')) + `<div class="sr col"><span class="sl"><small id="upNow">${upText()}</small></span><div class="chips" id="upBtns">${upBtns()}</div></div>`)
       + grp('', row('Privacy policy', `<button class="abtn" id="privBtn">Open</button>`) + row('Self-test', `<button class="abtn" id="selfTestBtn">Run (Ctrl+Shift+D)</button>`) + (T ? row('Quit Wallplayer', `<button class="abtn warn" data-sa="quit">Quit</button>`) : ''));
@@ -3186,6 +3186,7 @@ async function settingsAct(a){
   else if (a === 'unwall'){ applyCustom(null); IDB.del('wall').then(() => T && T.event.emit('wall-changed', {}).catch(() => {})) }
   else if (a === 'radio'){ S.radioOn = !S.radioOn; store.set('radioOn', S.radioOn); toast(S.radioOn ? 'Keeps playing similar songs when the playlist ends' : 'Stops when the playlist ends'); if (S.radioOn) maybeRadio() }
   else if (a === 'shuf'){ if (S.src === 'system') invoke('media_control', {action: 'shuffle'}).catch(err => toast(String(err))); else { S.shuffle = !S.shuffle; toast(S.shuffle ? 'Shuffle on' : 'Shuffle off') } }
+  else if (a === 'autohigh'){ try { S.ui = await invoke('set_autostart_high', {on: !S.ui.autostart_high}); toast(S.ui.autostart_high ? 'Wallplayer opens first when you sign in' : 'Wallplayer opens with the other startup apps') } catch(err){ toast(String(err)) } }
   else if (a === 'behind'){ try { S.ui = await invoke('set_wallpaper_mode', {on: !S.ui.wallpaper_mode}); toast(S.ui.wallpaper_mode ? 'Behind desktop icons — Ctrl+Alt+Space to search' : 'Interactive desktop mode') } catch(err){ toast(String(err)) } }
   else if (a === 'quit'){ invoke('quit_app'); return }
   else if (a === 'dim'){ S.dim = !S.dim; applyToggles() }

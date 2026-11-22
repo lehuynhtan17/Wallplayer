@@ -2,6 +2,7 @@
 
 mod accounts;
 mod audio;
+mod boot;
 mod deskmouse;
 mod desktop;
 mod guard;
@@ -40,6 +41,8 @@ pub(crate) struct AppState {
 struct UiState {
     wallpaper_mode: bool,
     autostart: bool,
+    /// "Start with Windows" → "High priority" (the sign-in task)
+    autostart_high: bool,
     peek: bool,
 }
 
@@ -47,7 +50,7 @@ fn ui_state(app: &AppHandle) -> UiState {
     let st = app.state::<AppState>();
     let wallpaper_mode = st.settings.lock().unwrap().wallpaper_mode;
     let peek = *st.peek.lock().unwrap();
-    UiState { wallpaper_mode, autostart: settings::autostart_enabled(), peek }
+    UiState { wallpaper_mode, autostart: settings::autostart_enabled(), autostart_high: boot::high_on(), peek }
 }
 
 /// Apply the wanted placement (peek > wallpaper > desktop).
@@ -134,6 +137,20 @@ fn set_autostart(app: AppHandle, on: bool) -> UiState {
         let _ = item.set_checked(settings::autostart_enabled());
     }
     ui_state(&app)
+}
+
+/// Settings → General → "High priority": start as soon as you sign in, before the other startup apps.
+#[tauri::command]
+fn set_autostart_high(app: AppHandle, on: bool) -> Result<UiState, String> {
+    let r = settings::set_autostart_high(on);
+    if r.is_err() {
+        let _ = settings::set_autostart(true); // at least the normal start keeps working
+    }
+    let item = app.state::<AppState>().auto_item.lock().unwrap().clone();
+    if let Some(item) = item {
+        let _ = item.set_checked(settings::autostart_enabled());
+    }
+    r.map(|_| ui_state(&app))
 }
 
 #[tauri::command]
@@ -755,6 +772,7 @@ fn main() {
             get_state,
             set_wallpaper_mode,
             set_autostart,
+            set_autostart_high,
             save_playlist,
             create_playlist,
             peek,
@@ -841,13 +859,20 @@ fn main() {
                 desktop::spawn_watcher(raw);
                 deskmouse::start(handle.clone());
             }
-            apply_mode(&handle);
+            let at_signin = std::env::args().any(|a| a == settings::AUTOSTART_ARG);
+            if at_signin {
+                boot::boost_start();
+            }
+            // at sign-in the desktop may not exist yet: stay hidden until it does (below), instead of
+            // showing up as a plain window over the sign-in screen
+            if !at_signin || desktop::shell_ready() {
+                apply_mode(&handle);
+            }
             desktop::set_icons_hidden(hide_on);
             // the web engine dies → start again instead of sitting empty in the tray
             // Started by Windows at sign-in: Explorer may not have built the desktop yet. Wait for it
             // (up to 2 minutes), then go behind the icons again — otherwise the skin could stay a plain
             // window behind everything, looking as if Wallplayer never opened.
-            let at_signin = std::env::args().any(|a| a == settings::AUTOSTART_ARG);
             guard::log(&handle, if at_signin { "started with Windows" } else { "started" });
             if let Some(fix) = settings::heal_autostart() {
                 guard::log(&handle, &fix);
@@ -864,6 +889,8 @@ fn main() {
                     guard::log(&h3, &format!("desktop ready after {:.1}s: placing the skin", t0.elapsed().as_secs_f32()));
                     let h4 = h3.clone();
                     let _ = h3.run_on_main_thread(move || apply_mode(&h4));
+                    // the skin is up: back to normal priority once it has settled
+                    boot::boost_end_after(std::time::Duration::from_secs(20));
                 });
             }
             guard::watch(&win, true);
