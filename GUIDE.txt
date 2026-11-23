@@ -258,8 +258,8 @@ What differs from Windows:
 - macOS: Wallplayer sits on the desktop of every Space, under all apps. With "Hide desktop icons" on it
   covers Finder's icons and takes the mouse; off, it sits under them. "Open at login" adds a
   LaunchAgent (~/Library/LaunchAgents/com.tan.wallplayer.plist). The app is not signed by Apple: the
-  first time, right-click Wallplayer.app → Open. Music in Spotify and Apple Music shows in the player
-  (macOS asks once whether Wallplayer may control them). The search shortcut is ⇧⌘Space, because
+  first time, right-click Wallplayer.app → Open. Songs you start from Wallplayer in Spotify or Apple
+  Music show in the player (macOS asks once whether Wallplayer may control them). The search shortcut is ⇧⌘Space, because
   macOS uses ⌃⌥Space to switch the keyboard language. The ambient light follows its own animation:
   macOS does not let apps hear the system sound without the Screen Recording permission.
 - Not on Linux / macOS: "High priority" (a Windows feature).

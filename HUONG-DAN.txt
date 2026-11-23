@@ -264,8 +264,8 @@ Khác với Windows:
 - macOS: Wallplayer nằm trên desktop của mọi Space, dưới mọi app. Bật "Ẩn icon desktop" thì nó phủ lên
   icon của Finder và nhận chuột; tắt thì nó nằm dưới các icon. "Mở khi đăng nhập" tạo một LaunchAgent
   (~/Library/LaunchAgents/com.tan.wallplayer.plist). App chưa được Apple ký: lần đầu hãy chuột phải
-  Wallplayer.app → Open. Nhạc trong Spotify và Apple Music hiện lên trình phát (macOS hỏi một lần có cho
-  Wallplayer điều khiển không). Phím tắt tìm nhạc là ⇧⌘Space, vì macOS dùng ⌃⌥Space để đổi bàn phím
+  Wallplayer.app → Open. Bài bạn mở từ Wallplayer sang Spotify hay Apple Music hiện lên trình phát
+  (macOS hỏi một lần có cho Wallplayer điều khiển không). Phím tắt tìm nhạc là ⇧⌘Space, vì macOS dùng ⌃⌥Space để đổi bàn phím
   (Tiếng Việt ⇄ English). Viền sáng chạy theo hiệu ứng riêng: macOS không cho app nghe âm thanh hệ thống
   nếu chưa cấp quyền Ghi màn hình.
 - Không có trên Linux / macOS: "Ưu tiên cao" (High priority, tính năng của Windows).

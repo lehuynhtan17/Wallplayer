@@ -30,6 +30,7 @@ File ra: `src-tauri/target/release/wallplayer.exe`. Khi phát hành phải đi k
 - App tự cập nhật từ release mới nhất (`src-tauri/src/update.rs`), mỗi hệ tìm đúng zip của mình: tên 3 file zip và thư mục trong zip không được đổi. Tag dạng `V1.0.3`.
 
 ## Lưu ý
+- **Mọi thay đổi phải làm đồng bộ cho cả 3 nền tảng: Windows, Linux, macOS** (giao diện chung `ui/index.html`; phần Rust của Windows ở `src-tauri/src/`, Linux/macOS ở `src-tauri/src/unix/`). Sửa một bên thì kiểm tra và sửa bên kia, cập nhật cả phần "Linux and macOS" trong GUIDE.txt / HUONG-DAN.txt, và chờ cả workflow "Linux and macOS (test builds)" chạy xong.
 - Bản exe cũ được build chéo từ Linux và chưa từng chạy thử trên Windows thật: hãy build và kiểm tra lại trên máy Windows trước khi phát hành.
 - Genius, YouTube InnerTube, dịch Google dùng API không chính thức, có thể đổi bất cứ lúc nào.
 - Google lyrics không tự động hóa được (captcha), app chỉ mở trình duyệt.
