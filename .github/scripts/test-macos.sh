@@ -56,28 +56,32 @@ cap "3. Shift+Command+Space: the skin comes above every app; type to search"
 key 'keystroke space using {shift down, command down}'; sleep 2.5
 wins 3-search
 check "Shift+Command+Space raises the skin above the apps" '[ "$(level 3-search)" = "$(lvl 3-search floating)" ]'
-key 'keystroke "nang tho"'; sleep 3
+key 'keystroke "nang tho hoang dung"'; sleep 7
 shot 3-search
 
-cap "4. Self-test (Ctrl+Shift+D): volume, desktop, screen colours"
-key 'keystroke "d" using {control down, shift down}'; sleep 5
-shot 4-selftest
+cap "4. Enter: play the top result from YouTube Music (real internet)"
+key 'key code 36'; sleep 15
+shot 4-playing
 
-cap "5. Switch to the other app: the skin goes back to the desktop"
+cap "5. Self-test (Ctrl+Shift+D): volume, desktop, YouTube"
+key 'keystroke "d" using {control down, shift down}'; sleep 6
+shot 5-selftest
+
+cap "6. Switch to the other app: the skin goes back to the desktop"
 osascript -e 'tell application "Calculator" to activate' 2>> "$OUT/osascript.log"; sleep 3
-wins 5-back; shot 5-back
-check "skin back just above the desktop icons" '[ "$(level 5-back)" = "$(( $(lvl 5-back desktopIcon) + 1 ))" ]'
+wins 6-back; shot 6-back
+check "skin back just above the desktop icons" '[ "$(level 6-back)" = "$(( $(lvl 6-back desktopIcon) + 1 ))" ]'
 osascript -e 'quit app "Calculator"' 2>> "$OUT/osascript.log"; sleep 2
 
-cap "6. Open the volume slider (system volume)"
+cap "7. One click on the skin while Finder is in front: the volume slider opens"
 W=${D%x*}; H=${D#*x}
 /tmp/macwins click $(( W * 660 / 1000 )) $(( H * 797 / 1000 )); sleep 3
-shot 6-volume
+shot 7-volume
 osascript -e 'set volume output volume 30' 2>> "$OUT/osascript.log"; sleep 3
 
-cap "7. Mission Control: the skin stays on the desktop"
+cap "8. Mission Control: the skin stays on the desktop"
 open -a "Mission Control" 2>> "$OUT/osascript.log"; sleep 3
-shot 7-mission
+shot 8-mission
 open -a "Mission Control" 2>> "$OUT/osascript.log"; sleep 2
 
 check "app still running at the end" 'kill -0 $PID'

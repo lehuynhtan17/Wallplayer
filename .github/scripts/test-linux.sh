@@ -77,7 +77,8 @@ check "skin stays on Show desktop" 't xwininfo -id $W | grep -q IsViewable'
 t wmctrl -k off; sleep 2.5
 
 cap "4. Ctrl+Alt+Space: the skin comes above every app; type to search"
-t xdotool key ctrl+alt+space; sleep 2
+t xdotool key ctrl+alt+space
+for i in $(seq 1 20); do t xprop -id $W _NET_WM_STATE | grep -q ABOVE && break; sleep 0.3; done
 check "Ctrl+Alt+Space raises the skin" 't xprop -id $W _NET_WM_STATE | grep -q ABOVE'
 t xdotool type --delay 110 "nang tho hoang dung"; sleep 3
 
@@ -124,6 +125,11 @@ cap "12. Unplug it: the skin fills the whole screen again"
 t xrandr --delmonitor RIGHT-2 > /dev/null; t xrandr --delmonitor LEFT-1 > /dev/null
 sleep 6
 check "skin back to 1920 wide" 't xwininfo -id $W | grep -q "Width: 1920"'
+cap "13. Search and play a song from YouTube Music (real internet)"
+pkill -f fake_mpris; sleep 1
+t xdotool key ctrl+alt+space; sleep 2
+t xdotool key ctrl+a; t xdotool type --delay 90 "nang tho hoang dung"; sleep 7
+t xdotool key Return; sleep 14
 check "app still running at the end" 'pgrep -x wallplayer'
 
 cap "End: Wallplayer on Linux"

@@ -2732,7 +2732,7 @@ function renderFlow(rebuild){
     list.slice(0, 60).forEach((t, i) => { const el = document.createElement('div'); el.className = 'fc'; el.dataset.i = i;
       el.innerHTML = `<div class="fa"><img src="${esc(t.art || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pl">${I.play}</span><a class="open" href="#" title="Open in platform">${I.ext}</a></div><b>${esc(t.title)}</b><span>${esc(t.sub || t.artist)}</span>`;
       host.appendChild(el); FLOW.els.push(el) });
-    if (!list.length) host.innerHTML = `<div class="fempty">${T ? 'Search to start · Ctrl+Alt+Space' : ''}</div>`;
+    if (!list.length) host.innerHTML = `<div class="fempty">${T ? 'Search to start · ' + (OS === 'macos' ? '⇧⌘Space' : 'Ctrl+Alt+Space') : ''}</div>`;
   }
   FLOW.list = list; const c = flowCenterIdx(list); FLOW.center = c;
   FLOW.els.forEach((el, i) => { const off = i - c, a = Math.min(Math.abs(off), 3), sg = Math.sign(off);
@@ -3648,7 +3648,7 @@ $('#clock').addEventListener('click', e => { if (!e.target.closest('#clockSvg, #
 $('#lyrics2').addEventListener('click', e => { if (!app.classList.contains('editing')) return; e.stopPropagation(); openEditor('lyrics') });
 $('#clock').addEventListener('dblclick', e => e.stopPropagation());
 /* "Search from anywhere": one rebindable key / mouse button (default Ctrl Alt Space) */
-S.searchKey = 'Ctrl+Alt+Space'; S.binding = false;
+S.searchKey = window.__WP_DEFAULT_KEY__ || 'Ctrl+Alt+Space'; S.binding = false;
 const keyLabel = k => (k || '').replace(/Mouse:Middle/, 'Middle click').replace(/Mouse:X1/, 'Mouse back button').replace(/Mouse:X2/, 'Mouse forward button').replace(/\+/g, ' + ').replace(/Super/, OS === 'macos' ? '⌘' : OS === 'linux' ? 'Super' : 'Win').replace(/\bKey([A-Z])\b/, '$1').replace(/\bDigit(\d)\b/, '$1')
   .replace(OS === 'macos' ? /\b(Ctrl|Alt|Shift)\b/g : /(?!)/, m => ({Ctrl: '⌃', Alt: '⌥', Shift: '⇧'})[m] || m);
 async function applySearchKey(spec){
