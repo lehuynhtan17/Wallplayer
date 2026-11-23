@@ -48,6 +48,14 @@ pub static MAIN: AtomicIsize = AtomicIsize::new(0);
 static APP: OnceLock<AppHandle> = OnceLock::new();
 /// Window labels; a window's handle is its place in this list + 1.
 static LABELS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+/// Linux: when the main skin was last hidden and shown again to change its window type.
+static REMAPPED: Mutex<Option<Instant>> = Mutex::new(None);
+
+/// The skin lost focus only because it was hidden and shown again a moment ago to change its
+/// window type (Linux), not because the user went to another window.
+pub fn remapping() -> bool {
+    REMAPPED.lock().map(|t| t.is_some_and(|t| t.elapsed() < Duration::from_millis(1000))).unwrap_or(false)
+}
 
 /// The handle of one of our windows (see the module notes).
 pub fn raw_of(w: &WebviewWindow) -> isize {
@@ -344,6 +352,9 @@ fn apply(w: &WebviewWindow, mode: Mode, (x, y, ww, hh): (i32, i32, i32, i32), _i
     if gw.type_hint() != hint {
         // the window manager reads the type when the window appears: hide, change, show again
         if gw.is_visible() {
+            if !is_mirror(crate::raw_of(w)) {
+                *REMAPPED.lock().unwrap() = Some(Instant::now());
+            }
             gw.hide();
         }
         gw.set_type_hint(hint);

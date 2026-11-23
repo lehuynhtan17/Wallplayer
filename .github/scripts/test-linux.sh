@@ -146,8 +146,12 @@ t xrandr --delmonitor RIGHT-2 > /dev/null; t xrandr --delmonitor LEFT-1 > /dev/n
 sleep 6
 check "skin back to 1920 wide" 't xwininfo -id $W | grep -q "Width: 1920"'
 cap "13. Search and play a song from YouTube Music (real internet)"
-pkill -f fake_mpris; sleep 1
-t xdotool key ctrl+alt+space; sleep 2
+pkill -f fake_mpris; sleep 3
+click 1500 520; sleep 1   # the skin was just clicked (it has the focus), then the shortcut
+t xdotool key ctrl+alt+space
+for i in $(seq 1 20); do t xprop -id $W _NET_WM_STATE | grep -q ABOVE && break; sleep 0.3; done
+sleep 1
+check "Ctrl+Alt+Space right after clicking the skin raises it" 't xprop -id $W _NET_WM_STATE | grep -q ABOVE'
 t xdotool key ctrl+a; t xdotool type --delay 90 "nang tho hoang dung"; sleep 7
 click 672 465; sleep 14
 check "app still running at the end" 'pgrep -x wallplayer'

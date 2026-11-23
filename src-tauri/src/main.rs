@@ -972,6 +972,11 @@ fn main() {
                     return;
                 }
                 if let WindowEvent::Focused(false) = e {
+                    // Linux hides the skin for a moment to bring it to the front: not the user leaving
+                    #[cfg(not(windows))]
+                    if desktop::remapping() {
+                        return;
+                    }
                     if *h2.state::<AppState>().peek.lock().unwrap() {
                         set_peek(&h2, false);
                         let _ = h2.emit("peek-ended", ());
