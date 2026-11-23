@@ -1052,7 +1052,7 @@ const platById = id => PLATFORMS.find(p => p.id === id) || AUTO;
 const S = {
   platform: store.get('platform', 'auto'),
   queue: [], qIdx: -1, qKind: 'queue', mix: null, cols: [], radioOn: store.get('radioOn', true), radioKey: '',
-  history: store.get('history', []),
+  history: (store.get('history', []) || []).filter(h => !h.app || h.fromWp),
   track: null, src: 'none',          // none | demo | yt | system
   demo: {pos: 0, playing: false},
   sys: null, sysKey: '', sysArt: null, sysRecv: 0, sysOptimistic: null,
@@ -2464,7 +2464,7 @@ async function resolveAndPlay(t){
 }
 let trackStartAt = 0;   // when the last song was started here
 async function playTrack(t, list){
-  trackStartAt = Date.now();
+  trackStartAt = Date.now(); extExpect(null);
   if (TT.frame && t.source !== 'tiktok') TT.unload();   // music from elsewhere: the TikTok video stops
   if (list){ S.queue = list.slice(); S.qKind = 'queue'; S.mix = null; if (!T && S.queue.length < 6) S.queue = S.queue.concat(DEMO.filter(d => !S.queue.includes(d))) }
   S.qIdx = S.queue.indexOf(t); if (S.qIdx < 0){ S.queue.unshift(t); S.qIdx = 0 }
@@ -2493,6 +2493,7 @@ async function playTrack(t, list){
   }
   // external apps / web players — Windows media sessions bring "now playing" back here
   stopInternal(); if (S.src === 'yt' || S.src === 'sc') S.src = 'none';
+  extExpect({title: t.title, app: S.platform === 'spotifyweb' ? '' : 'spotify'});
   if (t.source === 'spotify'){
     if (S.platform === 'spotifyweb'){ openExternal(t.url); cardStarting(t, 'Starting on Spotify Web Player', t.url, 'spotifyweb'); return }
     cardStarting(t, 'Starting on Spotify', null, 'spotify');
@@ -2589,28 +2590,31 @@ async function dropPaths(paths){
 }
 
 /* ════════════════════ system now playing (Windows) ════════════════════ */
-// AUMID / exe name of the other app → a short name for people
-// Music in other apps never stops, pauses or replaces a song in Wallplayer, and Wallplayer never pauses
-// them: both just play. Only when the song here has stayed paused for a minute (you moved on) does the
-// player show what plays elsewhere; the paused song is not stopped, it plays again from the playlist.
-const FOLLOW_AFTER = 60e3;
-function followOther(){
-  if (MIRROR || !(S.src === 'yt' || S.src === 'sc' || S.src === 'local')) return;
-  if (isPlaying()){ S.inPausedAt = 0; return }
-  if (!S.inPausedAt) S.inPausedAt = Date.now();
-  const m = S.sys; if (!m || !m.has || !m.playing) return;
-  if (Date.now() - S.inPausedAt < FOLLOW_AFTER || Date.now() - trackStartAt < FOLLOW_AFTER) return;
-  app.classList.remove('clip'); S.src = 'none'; S.sysKey = ''; S.inPausedAt = 0; onMedia(m);
+// Music in other apps (a browser tab, a game, Spotify opened by itself…) is never picked up: no lyrics, no
+// video, nothing in History. The only exception is a song or playlist you started FROM Wallplayer that plays
+// in another app (Spotify, Apple Music or Spotify Web in the browser): that one, and Spotify moving on to its
+// next songs, show here until you play something else in Wallplayer. Both just play; neither pauses the other.
+const EXT = {want: null, app: '', key: ''};   // want = what Wallplayer just started elsewhere; app/key = what it follows
+function extExpect(w){ EXT.want = w ? {...w, at: Date.now()} : null; EXT.app = ''; EXT.key = '' }   // whatever you start here replaces what was followed
+const isBrowserApp = a => /chrome|msedge|\bedge\b|firefox|308046b0af4a39cb|opera|brave|vivaldi|\barc\b|safari|chromium/i.test(a || '');
+const songWords = x => (x || '').toLowerCase().replace(/\(.*?\)|\[.*?\]|\bfeat\..*$|\bft\..*$/g, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+function extOwned(m){
+  const key = m.title + '|' + m.artist;
+  if (EXT.app && m.app === EXT.app) return !isBrowserApp(m.app) || key === EXT.key;   // Spotify's next song, yes; another browser tab, no
+  const w = EXT.want; if (!w || Date.now() - w.at > 3 * 60e3) return false;   // nothing started from here lately
+  if (w.app && (m.app || '').toLowerCase().includes(w.app) && !w.title) return true;   // a playlist started in Spotify
+  const a = songWords(m.title), b = songWords(w.title);
+  return !!(a && b && (a.includes(b) || b.includes(a)));
 }
+function dropSys(){ if (S.src !== 'system') return; S.src = 'none'; S.sysKey = ''; setTrack(null); YTV.stop(); renderPlay() }
 function onMedia(m){
   S.sys = m; S.sysRecv = Date.now(); S.sysOptimistic = null;
-  if (S.src === 'tt') return;   // a TikTok video keeps playing
-  if (S.src === 'yt' || S.src === 'sc' || S.src === 'local'){ followOther(); return }   // a song here keeps playing
-  if (!m.has){ if (S.src === 'system'){ S.src = 'none'; S.sysKey = ''; setTrack(null); YTV.stop() } return }
-  S.src = 'system';
-  const key = m.title + '|' + m.artist;
+  if (S.src === 'tt' || S.src === 'yt' || S.src === 'sc' || S.src === 'local' || S.src === 'demo') return;   // a song here keeps playing
+  if (!m.has || !extOwned(m)){ dropSys(); return }
+  EXT.app = m.app; EXT.want = null; S.src = 'system';
+  const key = m.title + '|' + m.artist; EXT.key = key;
   if (key !== S.sysKey){
-    S.sysKey = key; const t = {title: m.title, artist: m.artist, album: m.album, art: S.sysArt, duration: m.duration_ms / 1000, app: m.app};
+    S.sysKey = key; const t = {title: m.title, artist: m.artist, album: m.album, art: S.sysArt, duration: m.duration_ms / 1000, app: m.app, fromWp: true};
     S.qKind = 'history'; setTrack(t); pushHistory(t); mvFor(t);
   } else { if (S.track) S.track.duration = m.duration_ms / 1000; renderPlay(); mvSync() }
 }
@@ -2868,7 +2872,7 @@ async function saveQueue(){
 async function playCollection(c){
   if (!c) return;
   if (c.source === 'ytmix'){ const [list, video] = String(c.id).split(':'); playMix({list, video, title: c.title, sub: c.sub, art: c.art}); return }
-  if (c.source === 'spotify'){ rememberCol(c); closeSearch(); stopInternal(); try { const r = await invoke('spotify_play', {uri: c.id}); toast(r === 'played' ? `Playing ${c.title} on Spotify` : `Opened ${c.title} in Spotify`) } catch(e){ openExternal(c.id) } return }
+  if (c.source === 'spotify'){ rememberCol(c); closeSearch(); stopInternal(); extExpect({app: 'spotify'}); try { const r = await invoke('spotify_play', {uri: c.id}); toast(r === 'played' ? `Playing ${c.title} on Spotify` : `Opened ${c.title} in Spotify`) } catch(e){ openExternal(c.id) } return }
   toast(`Loading ${c.title}…`);
   try {
     const list = (await invoke('collection_tracks', {source: c.source, id: c.id})).map(mapTrack);
@@ -3765,7 +3769,7 @@ function frame(now){
 }
 // end screens (suggested-video tiles) sit on the last ~20 s of a music video: fade to the cover there
 function ytEndGuard(){ if (!YTV.p) return; const d = YTV.dur(), t = YTV.time(); $('#ytWrap').classList.toggle('yt-end', d > 40 && d - t < 20) }
-setInterval(() => { renderClock(); if (S.src !== 'demo') renderPlay(); mvSync(); ytEndGuard(); followOther() }, 1000);
+setInterval(() => { renderClock(); if (S.src !== 'demo') renderPlay(); mvSync(); ytEndGuard() }, 1000);
 
 /* ════════════════════ mirror windows (other monitors) ════════════════════ */
 // The other monitors run this same page in mirror mode. They read the same saved

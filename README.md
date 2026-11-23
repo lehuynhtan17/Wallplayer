@@ -78,8 +78,9 @@ See the [Code signing policy](CODE_SIGNING.md).
 
 Platform behaviour: YouTube Music/Automatic play in-app through the YouTube IFrame player
 (video doubles as wallpaper); Spotify opens `spotify:search:`; Apple Music, Spotify Web
-Player, SoundCloud and Amazon Music open their search/track page. Whatever plays is picked
-up again through Windows media sessions.
+Player, SoundCloud and Amazon Music open their search/track page. A song started from Wallplayer
+in another app is picked up again through Windows media sessions; anything else playing in other
+apps (a browser tab, a game) is ignored.
 
 ## Build
 

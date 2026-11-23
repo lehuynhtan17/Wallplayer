@@ -1,6 +1,6 @@
 [package]
 name = "wallplayer"
-version = "1.0.16"
+version = "1.0.17"
 description = "Desktop wallpaper music player skin"
 edition = "2021"
 

@@ -55,7 +55,8 @@ NỀN TẢNG (search ngay trên nền tảng đã chọn)
 - SoundCloud: phát trong hình nền.
 - Spotify: search Spotify, phát trên app Spotify (cần kết nối tài khoản + Premium).
 - Spotify Web Player / Apple Music / Amazon Music: mở bài trên trình duyệt/app.
-Bài phát ở app khác vẫn được nhận qua Windows Media: bìa, lyrics, màu, điều khiển.
+Bài bạn mở từ Wallplayer sang Spotify, Spotify Web hay Apple Music vẫn hiện lại trên trình phát qua Windows
+(bìa, lyrics, màu, điều khiển), kể cả các bài Spotify tự phát tiếp sau đó.
 
 TÀI KHOẢN (icon nền tảng → Accounts…, hoặc Cài đặt → Tài khoản)
 - YouTube / YouTube Music: Sign in bằng Google → có Premium thì không quảng cáo.
@@ -157,9 +158,9 @@ VIỀN SÁNG, ICON KHAY, MV
 - Khi MV đang làm hình nền: các chấm nhỏ phía trên ô tìm kiếm = MV của bài và MV khác của cùng ca sĩ, bấm để đổi.
   App tự giữ MV khớp với tiếng. Nếu miệng ca sĩ vẫn lệch lời thì MV đó là bản dựng khác của bài (intro dài hơn,
   có đoạn phim, bản cắt ngắn): bấm chấm khác, hoặc phát thẳng video YouTube của bài (hình và tiếng cùng một video).
-- Nhạc phát ở 2 nơi cùng lúc (Wallplayer và Spotify / trình duyệt): cả hai cứ phát, Wallplayer không tự dừng bên nào.
-  Khi bài trong Wallplayer đã tạm dừng quá 1 phút mà app khác đang phát, trình phát chuyển sang hiện bài của app đó;
-  bấm một bài trong playlist để quay lại.
+- Wallplayer chỉ hiện những gì bạn phát từ Wallplayer. Video trên trình duyệt (Facebook, YouTube…), game, hay nhạc
+  bạn tự mở ở app khác đều bị bỏ qua: không bìa, không lyrics, không MV, không vào History. Wallplayer cũng không
+  tự dừng app khác: hai bên cứ phát.
 
 CẬP NHẬT (không cần file cài)
 - Mỗi lần mở, Wallplayer kiểm tra ngầm một lần, không hiện gì lên màn hình. Có bản mới thì mục trong menu
@@ -257,8 +258,8 @@ Khác với Windows:
 - Linux: Wallplayer trở thành chính desktop (cửa sổ desktop kiểu X11, loại mà trình quản lý file dùng), nằm
   dưới mọi app và có mặt ở mọi workspace; "Show desktop" không làm nó biến mất. Nó phủ lên icon desktop
   của trình quản lý file (nếu có) và nhận chuột trực tiếp. Trên phiên Wayland, app chạy qua XWayland.
-  "Mở khi đăng nhập" tạo file ~/.config/autostart/wallplayer.desktop. Nhạc phát ở app khác (Spotify,
-  trình duyệt, VLC…) lấy qua MPRIS; âm lượng hệ thống qua PipeWire / PulseAudio; viền sáng nghe nhạc
+  "Mở khi đăng nhập" tạo file ~/.config/autostart/wallplayer.desktop. Bài mở từ Wallplayer sang app khác
+  (Spotify, trình duyệt) đọc qua MPRIS; âm lượng hệ thống qua PipeWire / PulseAudio; viền sáng nghe nhạc
   qua `parec` hoặc `pw-record`.
 - macOS: Wallplayer nằm trên desktop của mọi Space, dưới mọi app. Bật "Ẩn icon desktop" thì nó phủ lên
   icon của Finder và nhận chuột; tắt thì nó nằm dưới các icon. "Mở khi đăng nhập" tạo một LaunchAgent

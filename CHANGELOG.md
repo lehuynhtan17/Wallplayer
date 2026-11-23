@@ -3,6 +3,12 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.17
+
+### Changed
+- Wallplayer no longer picks up music or videos playing in other apps by itself. A Facebook or YouTube video in the browser, a game, or music you start in another app no longer brings its cover, lyrics or music video into the player, and no longer lands in History. Only a song or playlist you start from Wallplayer that plays in Spotify, Spotify Web or Apple Music shows in the player (and Spotify's next songs after it), until you play something else in Wallplayer.
+- History drops the songs that came from other apps that way before this version.
+
 ## 1.0.16
 
 ### New

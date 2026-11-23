@@ -55,7 +55,8 @@ PLATFORMS (search goes to the platform you choose)
 - SoundCloud: plays inside the wallpaper.
 - Spotify: searches Spotify and plays in the Spotify app (needs your account and Premium).
 - Spotify Web Player / Apple Music / Amazon Music: opens the song in your browser or app.
-Songs playing in other apps are still picked up through Windows: cover, lyrics, colours and controls.
+A song you start from Wallplayer in Spotify, Spotify Web or Apple Music comes back to the player through
+Windows (cover, lyrics, colours, controls), and so do Spotify's next songs after it.
 
 ACCOUNTS (platform icon → Accounts…, or Settings → Accounts)
 - YouTube / YouTube Music: sign in with Google; with Premium there are no ads.
@@ -182,11 +183,10 @@ TIKTOK
 - Pick another platform to leave TikTok. Wallplayer starts again on TikTok if that is where you left it
   (paused until you press play).
 
-MUSIC IN TWO PLACES
-Wallplayer never pauses other apps, and music in another app (Spotify, a browser…) never stops or replaces
-the song playing in Wallplayer: both keep playing. When Wallplayer's song has stayed paused for a minute
-while another app plays, the player shows that app's song (cover, lyrics, controls); play from the
-playlist to come back.
+MUSIC IN OTHER APPS
+Wallplayer only shows what you play from Wallplayer. A video in a browser tab (Facebook, YouTube…), a game,
+or music you start in another app by yourself is ignored: no cover, no lyrics, no music video, nothing in
+History. Wallplayer never pauses other apps either: both just play.
 
 SHORTCUT
 One global shortcut: "Search from anywhere" (Ctrl + Alt + Space by default) opens the search from any app.
@@ -252,8 +252,8 @@ What differs from Windows:
 - Linux: Wallplayer becomes the desktop itself (an X11 desktop window, the kind file managers use), below
   every app and on every workspace; "Show desktop" leaves it in place. It covers the desktop icons of
   your file manager, if it shows any, and takes the mouse directly. On a Wayland session it runs through
-  XWayland. "Start at login" adds ~/.config/autostart/wallplayer.desktop. Music playing in other apps
-  (Spotify, browsers, VLC…) comes from MPRIS; the system volume from PipeWire / PulseAudio; the
+  XWayland. "Start at login" adds ~/.config/autostart/wallplayer.desktop. Songs started from Wallplayer in other
+  apps (Spotify, a browser) are read through MPRIS; the system volume from PipeWire / PulseAudio; the
   ambient light hears the sound through `parec` or `pw-record`.
 - macOS: Wallplayer sits on the desktop of every Space, under all apps. With "Hide desktop icons" on it
   covers Finder's icons and takes the mouse; off, it sits under them. "Open at login" adds a
