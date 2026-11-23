@@ -105,21 +105,21 @@ t xdotool key Escape; sleep 0.5
 check "skin back in the desktop layer" 't xprop -id $W _NET_WM_WINDOW_TYPE | grep -q DESKTOP'
 [ -n "$XT" ] && t xdotool windowminimize "$XT"; sleep 1.5
 
-cap "6. Music playing in another app (MPRIS, like Spotify) shows in the player"
+cap "6. Music started in another app by itself (MPRIS) stays out of the player"
 python3 "$HERE/fake_mpris.py" > /dev/null 2>&1 &
 sleep 8
 
-cap "7. Pause / Next in Wallplayer control that app"
+cap "7. Pause / Next in Wallplayer leave that app alone"
 DY=$(dock_dy); echo "  player bar offset: ${DY}px" >> "$OUT/checks.txt"
 click 700 $((861 + DY)); sleep 2.5
 DY=$(dock_dy); click 745 $((861 + DY)); sleep 3
-check "Pause / Next reached the other app" 'grep -q PlayPause /tmp/fake_mpris.log && grep -q Next /tmp/fake_mpris.log'
+check "Pause / Next did not touch the other app" '! grep -q -e PlayPause -e Next /tmp/fake_mpris.log'
 DY=$(dock_dy); click 700 $((861 + DY)); sleep 2.5
 
-cap "8. System volume: click for the slider, click to change it"
+cap "8. Volume: click for the slider, click to change it (the player's own volume: nothing from another app is playing here)"
 DY=$(dock_dy); click 1268 $((861 + DY)); sleep 2
 click 1150 $((788 + DY)); sleep 1.5
-check "volume slider changed the system volume" 'pactl get-sink-volume speaker | head -1 | grep -qv " 70%"'
+check "system volume left alone" 'pactl get-sink-volume speaker | head -1 | grep -q " 70%"'
 click 1210 $((788 + DY)); sleep 1.5
 t xdotool key Escape; move 1500 500; sleep 1
 
