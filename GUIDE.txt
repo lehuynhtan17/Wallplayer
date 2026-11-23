@@ -183,7 +183,8 @@ TIKTOK
 - Other displays show only the blurred picture of the video playing on the main screen: no video, buttons
   or details there.
 - On a portrait (upright) screen the video and its buttons are bigger, and the video's details and
-  "Up next" sit under the video.
+  "Up next" sit under the video, and the clock is small above it. A long caption scrolls inside its box
+  (mouse wheel or drag).
 - Pick another platform to leave TikTok. Wallplayer starts again on TikTok if that is where you left it
   (paused until you press play).
 

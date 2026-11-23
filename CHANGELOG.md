@@ -3,6 +3,13 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.19
+
+### Fixed
+- TikTok (1.0.18): the whole screen looked washed out, as if under a white haze, and on a landscape display the TikTok layout was drawn too big, so the buttons beside the video could end up under the search field. Both came from one mistake in 1.0.18.
+- TikTok: a long caption scrolls inside its box instead of running into the search field and player bar (portrait) or off the screen (landscape). The buttons beside the video shrink if the screen is too short for all of them.
+- TikTok on a portrait display: the clock sits small in the space above the video instead of touching it.
+
 ## 1.0.18
 
 ### New

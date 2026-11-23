@@ -718,17 +718,21 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 @media (max-aspect-ratio:5/4){
   /* the main display standing upright, in TikTok: a bigger video and controls, the video's details and
      Up next under it */
-  html.ttm{font-size:calc(var(--W) / 80)}
+  html.wp-ttmain{font-size:calc(var(--W) / 80)}
   #app.tt:not(.mirror) #ttStage{--tt-h:min(60vh, calc(66vw * 16 / 9));--tt-w:calc(var(--tt-h) * 9 / 16);--tt-top:7vh}
-  #app.tt:not(.mirror) #ttSide{left:50%;transform:translateX(-50%);top:calc(var(--tt-top) + var(--tt-h) + 2.4rem);height:auto;width:min(92vw, calc(var(--tt-w) + 30rem));
-    display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"tabs tabs" "info next" "com com";gap:1.6rem 2rem;align-items:start}
+  /* the box under the video ends 2rem above the search field and player bar; a long caption scrolls inside */
+  #app.tt:not(.mirror) #ttSide{left:50%;transform:translateX(-50%);top:calc(var(--tt-top) + var(--tt-h) + 2.4rem);height:auto;
+    bottom:calc(var(--tb, 48px) + 1.4rem + var(--dock-h, 13rem) + 2rem);width:min(92vw, calc(var(--tt-w) + 30rem));
+    display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"tabs tabs" "info next";gap:1.6rem 2rem;align-items:start}
   #app.tt:not(.mirror) #ttTabs{grid-area:tabs}
-  #app.tt:not(.mirror) #ttInfo{grid-area:info;margin-top:0}
+  #app.tt:not(.mirror) #ttInfo{grid-area:info;margin-top:0;max-height:100%}
   #app.tt:not(.mirror) #ttNextWrap{grid-area:next}
-  #app.tt:not(.mirror) #ttCom{grid-area:com;max-height:30vh}
+  #app.tt:not(.mirror) #ttCom{grid-area:com;height:100%}
   #app.tt:not(.mirror) #ttSide.com{grid-template-areas:"tabs tabs" "com com"}
   #app.tt:not(.mirror) .ttn{width:8.4rem}
-  #app.tt:not(.mirror) #clock{left:50%;top:3.4vh;transform:translate(-50%,-50%) scale(.42)}}
+  /* the clock, small, in the space above the video */
+  #app.tt:not(.mirror) #clock{left:50%;top:3.5vh;transform:translate(-50%,-50%) scale(.3)}}
+@media (max-aspect-ratio:5/4) and (min-aspect-ratio:3/5){#app.tt:not(.mirror) #clock{transform:translate(-50%,-50%) scale(.2)}}
 #ttCard{position:absolute;left:50%;top:var(--tt-top);width:var(--tt-w);height:var(--tt-h);transform:translateX(-50%);border-radius:1.8rem;overflow:hidden;background:#000;pointer-events:auto;
   box-shadow:0 2.6rem 5rem rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12)}
 #ttFrame,#ttFrame iframe,#ttCover,#ttHit{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -751,7 +755,7 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 @keyframes ttspin{to{transform:rotate(360deg)}}
 #ttMsg .row{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
 #ttRail{position:absolute;left:calc(50% + var(--tt-w) / 2 + 1.6rem);top:var(--tt-top);height:var(--tt-h);display:flex;flex-direction:column;justify-content:space-between;align-items:center;pointer-events:auto}
-#ttNav,#ttActs{display:flex;flex-direction:column;align-items:center;gap:1rem}
+#ttNav,#ttActs{display:flex;flex-direction:column;align-items:center;gap:1rem;zoom:var(--rail-z, 1)}
 #ttActs{gap:1.3rem}
 .tta2{display:flex;flex-direction:column;align-items:center;gap:.35rem;color:#fff;font:700 1.05rem Inter,system-ui,sans-serif}
 .tta2 i{width:4.6rem;height:4.6rem;border-radius:50%;display:grid;place-items:center;background:rgba(14,15,20,.38);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);transition:background .2s,transform .15s}
@@ -786,7 +790,9 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 .ttn{width:7.4rem;aspect-ratio:9/16;border-radius:1rem;overflow:hidden;background:rgba(255,255,255,.08);opacity:.72;transition:opacity .2s,transform .2s;box-shadow:0 0 0 1px rgba(255,255,255,.1)}
 .ttn:hover{opacity:1;transform:translateY(-.25rem)}
 .ttn img{width:100%;height:100%;object-fit:cover;display:block}
-#ttInfo{margin-top:auto;display:flex;flex-direction:column;gap:1.1rem;padding:1.7rem 1.8rem;border-radius:1.8rem;background:rgba(14,15,20,.4);backdrop-filter:blur(22px) saturate(1.3);border:1px solid rgba(255,255,255,.08)}
+#ttInfo{margin-top:auto;min-height:0;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;gap:1.1rem;padding:1.7rem 1.8rem;border-radius:1.8rem;background:rgba(14,15,20,.4);backdrop-filter:blur(22px) saturate(1.3);border:1px solid rgba(255,255,255,.08)}
+#ttInfo>*{flex-shrink:0}
+#ttInfo::-webkit-scrollbar{display:none}
 #ttInfo:empty{display:none}
 .tta{display:flex;align-items:center;gap:1rem;min-width:0}
 .tta img{width:4.2rem;height:4.2rem;border-radius:50%;object-fit:cover;background:rgba(255,255,255,.12);flex:none}
@@ -986,8 +992,12 @@ const I18N = (() => {
 const MIRROR = !!window.__WP_MIRROR__ || new URLSearchParams(location.search).has('mirror');
 if (MIRROR) app.classList.add('mirror');
 const MY_LABEL = (() => { try { return T.webviewWindow.getCurrentWebviewWindow().label } catch(e){} try { return window.__TAURI_INTERNALS__.metadata.currentWebview.label } catch(e){} return MIRROR ? '' : 'main' })();
-// the main display in TikTok: html gets "ttm" (an upright screen then makes the TikTok layout bigger)
-if (!MIRROR) new MutationObserver(() => document.documentElement.classList.toggle('ttm', app.classList.contains('tt'))).observe(app, {attributes: true, attributeFilter: ['class']});
+// the main display in TikTok: html gets "wp-ttmain" (an upright screen then makes the TikTok layout bigger).
+// Not "ttm": that is the music line under a TikTok caption (70% opacity), and on <html> it faded the whole
+// screen to 70% over white.
+if (!MIRROR) new MutationObserver(() => document.documentElement.classList.toggle('wp-ttmain', app.classList.contains('tt'))).observe(app, {attributes: true, attributeFilter: ['class']});
+// how tall the search field + player bar are (on an upright screen the TikTok details stop above them)
+try { new ResizeObserver(() => app.style.setProperty('--dock-h', $('#dock').offsetHeight + 'px')).observe($('#dock')) } catch(e){}
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('wp.'+k); return v == null ? d : JSON.parse(v) }catch(e){ return d } },
   set(k, v){ if (MIRROR) return; try{ localStorage.setItem('wp.'+k, JSON.stringify(v)) }catch(e){} }
@@ -2314,8 +2324,16 @@ const TTI = {
 const ago = t => { const s = Date.now() / 1000 - t; if (!(t > 0) || s < 0) return ''; if (s < 3600) return Math.max(1, Math.round(s / 60)) + 'm'; if (s < 86400) return Math.round(s / 3600) + 'h'; if (s < 86400 * 30) return Math.round(s / 86400) + 'd'; return new Date(t * 1000).toLocaleDateString() };
 // set HTML only when it changed: redrawing a button between mouse down and up would swallow the click
 const setHTML = (el, h) => { if (el._h !== h){ el._h = h; el.innerHTML = h } };
+// the buttons beside the video shrink when the video is too short for all of them (they never reach the
+// search field and player bar below)
+function fitRail(){
+  const r = $('#ttRail'), n = $('#ttNav'), a = $('#ttActs'); if (!TT.on || !r || !n || !a) return;
+  r.style.setProperty('--rail-z', 1); const need = n.offsetHeight + a.offsetHeight + 24, have = r.clientHeight;
+  r.style.setProperty('--rail-z', have > 0 && need > have ? Math.max(.6, have / need).toFixed(3) : 1);
+}
+addEventListener('resize', () => fitRail());
 function renderTT(){
-  if (!TT.on) return;
+  if (!TT.on) return; requestAnimationFrame(fitRail);
   const c = TT.list[TT.i], acc = S.acc || {}, signed = MIRROR ? !!TT.signed : !!acc.tiktok;
   setHTML($('#ttTabs'), `<button class="ttt ${TT.mode === 'foryou' ? 'on' : ''}" data-tt="foryou">For You</button>`
     + (TT.q ? `<button class="ttt ${TT.mode === 'search' ? 'on' : ''}" data-tt="search" title="${esc(TT.q)}">${I.search}<span>${esc(TT.q)}</span></button>` : '')
@@ -2389,6 +2407,7 @@ $('#ttUp').addEventListener('click', e => { e.stopPropagation(); TT.go(-1) });
 $('#ttDown').addEventListener('click', e => { e.stopPropagation(); TT.go(1) });
 $('#ttAuto').addEventListener('click', e => { e.stopPropagation(); S.look.ttAuto = S.look.ttAuto === false; store.set('look', S.look); renderTT();
   toast(S.look.ttAuto ? 'Auto scroll on · the next video plays when one ends' : 'Auto scroll off · each video loops') });
+dragScrollY($('#ttInfo'));
 $('#ttStage').addEventListener('wheel', e => {
   if (!e.target.closest('#ttCard,#ttRail')) return; e.preventDefault(); e.stopPropagation();
   const now = Date.now(); if (Math.abs(e.deltaY) < 4 || now - TT.wheelAt < 650) return; TT.wheelAt = now; TT.go(e.deltaY > 0 ? 1 : -1);

@@ -189,7 +189,8 @@ TIKTOK
   phiên đăng nhập TikTok của bạn) để đọc danh sách video, và phát từng video bằng trình phát nhúng chính thức
   của TikTok. Nếu TikTok đòi xác minh, bấm "Mở TikTok", làm theo, rồi bấm "Xong".
 - Màn hình phụ chỉ hiện nền mờ lấy từ hình của video đang phát ở màn chính: không có video, nút hay thông tin.
-- Màn hình dọc: khung video và các nút to hơn, thông tin video và "Tiếp theo" nằm dưới video.
+- Màn hình dọc: khung video và các nút to hơn, thông tin video và "Tiếp theo" nằm dưới video, đồng hồ nhỏ ở phía
+  trên video. Chú thích dài thì cuộn trong khung (lăn chuột hoặc kéo).
 - Chọn nền tảng khác để thoát TikTok. Lần mở sau Wallplayer vẫn ở TikTok nếu bạn thoát khi đang ở đó (đứng yên
   cho tới khi bạn bấm phát).
 
