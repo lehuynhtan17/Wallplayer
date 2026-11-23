@@ -212,6 +212,11 @@ fn is_mirror(h: HWND) -> bool {
     MIRRORS.lock().unwrap().iter().any(|(m, _)| *m == h.0 as isize)
 }
 
+/// A mirror window, or something inside it (its web view): the mouse forwarding counts it as "us".
+pub fn is_mirror_window(h: HWND) -> bool {
+    unsafe { mirror_handles().into_iter().any(|m| m == h.0 as isize || IsChild(hwnd(m), h).as_bool()) }
+}
+
 pub const APP_ID: &str = "com.tan.wallplayer";
 
 fn hwnd(raw: isize) -> HWND {

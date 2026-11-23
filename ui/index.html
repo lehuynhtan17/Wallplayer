@@ -62,10 +62,12 @@ img{display:block}
 .rc .ra .csave:hover{background:rgba(0,0,0,.72)}
 .rc .ra .csave.on{color:rgb(var(--accent))}
 .rc .ra .csave .ico{width:1.35rem;height:1.35rem}
-/* mirror (another monitor): same scene, no controls */
+/* mirror (another monitor): same scene, no player bar or menus; the playlist and the cover flow can be
+   clicked (the main window plays what you pick) */
 #app.mirror #dock,#app.mirror .menu,#app.mirror #toast,#app.mirror #upPill,#app.mirror #upCard,#app.mirror #dropHint,#app.mirror #flowStatus,
-#app.mirror #editSheet,#app.mirror #restoreBtn{display:none!important}
-#app.mirror,#app.mirror *{pointer-events:none!important}
+#app.mirror #editSheet,#app.mirror #restoreBtn,#app.mirror #flow .open{display:none!important}
+#app.mirror,#app.mirror :not(#flowWrap,#flowWrap *,#qlist,#qlist *){pointer-events:none!important}
+#app.mirror #flowWrap,#app.mirror #qlist{pointer-events:auto}
 
 /* ───────── ambient light ───────── */
 #ambient{position:absolute;inset:0;pointer-events:none;z-index:2}
@@ -711,6 +713,22 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 #app.tt #clock{left:19%;top:44%;transform:translate(-50%,-50%) scale(.8)}
 #app.bare #ttStage{opacity:0;pointer-events:none}
 #app.mirror #ttStage,#app.mirror #ttStage *{pointer-events:none}
+/* other displays in TikTok: nothing but the blurred picture of the main display's video */
+#app.mirror.tt #ttCard,#app.mirror.tt #ttRail,#app.mirror.tt #ttSide,#app.mirror.tt #clock{display:none!important}
+@media (max-aspect-ratio:5/4){
+  /* the main display standing upright, in TikTok: a bigger video and controls, the video's details and
+     Up next under it */
+  html.ttm{font-size:calc(var(--W) / 80)}
+  #app.tt:not(.mirror) #ttStage{--tt-h:min(60vh, calc(66vw * 16 / 9));--tt-w:calc(var(--tt-h) * 9 / 16);--tt-top:7vh}
+  #app.tt:not(.mirror) #ttSide{left:50%;transform:translateX(-50%);top:calc(var(--tt-top) + var(--tt-h) + 2.4rem);height:auto;width:min(92vw, calc(var(--tt-w) + 30rem));
+    display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"tabs tabs" "info next" "com com";gap:1.6rem 2rem;align-items:start}
+  #app.tt:not(.mirror) #ttTabs{grid-area:tabs}
+  #app.tt:not(.mirror) #ttInfo{grid-area:info;margin-top:0}
+  #app.tt:not(.mirror) #ttNextWrap{grid-area:next}
+  #app.tt:not(.mirror) #ttCom{grid-area:com;max-height:30vh}
+  #app.tt:not(.mirror) #ttSide.com{grid-template-areas:"tabs tabs" "com com"}
+  #app.tt:not(.mirror) .ttn{width:8.4rem}
+  #app.tt:not(.mirror) #clock{left:50%;top:3.4vh;transform:translate(-50%,-50%) scale(.42)}}
 #ttCard{position:absolute;left:50%;top:var(--tt-top);width:var(--tt-w);height:var(--tt-h);transform:translateX(-50%);border-radius:1.8rem;overflow:hidden;background:#000;pointer-events:auto;
   box-shadow:0 2.6rem 5rem rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12)}
 #ttFrame,#ttFrame iframe,#ttCover,#ttHit{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -967,6 +985,9 @@ const I18N = (() => {
 // It reads the same saved settings and follows what the main window plays; it never saves.
 const MIRROR = !!window.__WP_MIRROR__ || new URLSearchParams(location.search).has('mirror');
 if (MIRROR) app.classList.add('mirror');
+const MY_LABEL = (() => { try { return T.webviewWindow.getCurrentWebviewWindow().label } catch(e){} try { return window.__TAURI_INTERNALS__.metadata.currentWebview.label } catch(e){} return MIRROR ? '' : 'main' })();
+// the main display in TikTok: html gets "ttm" (an upright screen then makes the TikTok layout bigger)
+if (!MIRROR) new MutationObserver(() => document.documentElement.classList.toggle('ttm', app.classList.contains('tt'))).observe(app, {attributes: true, attributeFilter: ['class']});
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('wp.'+k); return v == null ? d : JSON.parse(v) }catch(e){ return d } },
   set(k, v){ if (MIRROR) return; try{ localStorage.setItem('wp.'+k, JSON.stringify(v)) }catch(e){} }
@@ -2697,6 +2718,7 @@ function renderQueue(){
     return `<li class="qi ${cur ? 'cur' : ''}" data-i="${i}">${isQ ? `<span class="qg" title="Drag to reorder">${I.grip}</span>` : ''}<div class="qm"><b>${esc(t.title)}</b><span>${esc(t.artist)}</span></div>${MIRROR || cur ? '' : `<span class="qx">${isQ ? `<button data-qnext title="Play next">${I.playNext}</button>` : ''}<button data-qrm title="${isQ ? 'Remove from the playlist' : 'Remove from history'}">${I.xs}</button></span>`}</li>` }).join('')
     : `<li class="qempty">${hist ? 'Songs you play will show up here' : 'Press Ctrl+Alt+Space to search'}</li>`;
   ol.onclick = e => { const li = e.target.closest('.qi'); if (!li) return; const i = +li.dataset.i, t = list[i]; if (!t) return;
+    if (MIRROR){ mirrorCmd({cmd: 'pick', key: t.title + '|' + t.artist}); return }   // another display: the main one plays it
     if (e.target.closest('[data-qrm]')){ e.stopPropagation(); queueRemove(list, i); return }
     if (e.target.closest('[data-qnext]')){ e.stopPropagation(); queueAdd(t, true); return }
     if (e.target.closest('.qg')) return;
@@ -2750,6 +2772,7 @@ function renderFlow(rebuild){
 $('#flow').addEventListener('click', e => {
   const el = e.target.closest('.fc'); if (!el) return; e.stopPropagation(); const t = FLOW.list[+el.dataset.i]; if (!t) return;
   if (e.target.closest('.open')){ e.preventDefault(); openExternal(platformUrl(effectivePlatform(), t)); return }
+  if (MIRROR){ FLOW.browse = null; mirrorCmd({cmd: 'pick', key: t.title + '|' + t.artist}); return }   // another display: the main one plays it
   const list = FLOW.list.slice();
   if (isCurrent(t)) togglePlay(); else { FLOW.browse = null; playTrack(t, list) }
 });
@@ -3327,7 +3350,7 @@ function vmHover(x, y){
 function vmRange(r, x){ const b = r.getBoundingClientRect(), f = clamp((x - b.left) / b.width, 0, 1), mn = +r.min || 0, mx = r.max === '' ? 100 : +r.max, st = +r.step || 0;
   let v = mn + f * (mx - mn); if (st) v = Math.round(v / st) * st; r.value = v; vmFire('input', r, x, 0); vmFire('change', r, x, 0) }
 function deskMouse(m){
-  const k = m.k, d = window.devicePixelRatio || 1, x = m.x / d, y = m.y / d;
+  const k = m.k, d = m.c ? 1 : (window.devicePixelRatio || 1), x = m.x / d, y = m.y / d;
   if (k === 'leave'){ vmHover(-1, -1); return }
   if (k === 'move'){ const el = vmHover(x, y); if (VM.down && VM.down.type === 'range') vmRange(VM.down, x);
     vmFire('pointermove', VM.down || el || document.body, x, y); vmFire('mousemove', VM.down || el || document.body, x, y); return }
@@ -3800,6 +3823,15 @@ function mirrorSync(force){
 setInterval(() => mirrorSync(false), 500);
 
 const MS = {pos: 0, at: 0, playing: false, vid: null, vt: 0, vpl: false};
+// a click on another display (playlist, cover flow) asks the main window to play
+const mirrorCmd = d => { if (T) T.event.emit('mirror-cmd', d).catch(() => {}) };
+function onMirrorCmd(d){
+  if (!d || MIRROR) return;
+  if (d.cmd === 'pick'){
+    const list = queueList(), t = list.find(x => x.title + '|' + x.artist === d.key); if (!t) return;
+    if (isCurrent(t)) togglePlay(); else playTrack(t, list);
+  }
+}
 function mirrorApply(m){
   if (!m) return;
   S.src = 'mirror';
@@ -3826,7 +3858,7 @@ function mirrorTT(t){
     TT.mode = t.mode || 'foryou'; TT.q = t.q || ''; TT.signed = !!t.signed;
     const was = TT.list[0] && TT.list[0].id, id = t.clip && t.clip.id;
     TT.list = t.clip ? [t.clip, ...(t.next || [])] : []; TT.i = t.clip ? 0 : -1;
-    if (id !== was) TT.mirrorShow(t.clip);
+    if (id !== was) TT.mirrorShow(t.clip);   // only its blurred picture shows here (the rest is hidden)
     renderTT();
   }
   TT.mplay = !!t.playing;
@@ -3884,6 +3916,7 @@ async function boot(){
   if (T && MIRROR){
     listen('audio-spectrum', e => { AU.feed(e.payload, performance.now()); if (loopTimer && (e.payload[0] || 0) > 1.5e-4) wakeLoop() });
     listen('mirror-state', e => mirrorApply(e.payload));
+    if (MY_LABEL) listen('desk-mouse-' + MY_LABEL, e => deskMouse(e.payload));   // Windows / macOS under the icons: the mouse on this display
     listen('wall-changed', () => IDB.get('wall').then(b => applyCustom(b || null)));
     setTrack(null); setAccent(null); setWallArt(null);
     T.event.emit('mirror-hello', {}).catch(() => {});
@@ -3905,6 +3938,7 @@ async function boot(){
     listen('monitor-changed', () => loadMonitors());
     listen('toast', e => toast(e.payload));
     listen('mirror-hello', () => mirrorSync(true));
+    listen('mirror-cmd', e => onMirrorCmd(e.payload));
     try { S.ui = await invoke('get_state') } catch(e){}
     refreshAccounts();
     S.qKind = 'history'; setTrack(null); setAccent(null); setWallArt(null);

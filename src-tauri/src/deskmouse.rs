@@ -4,7 +4,9 @@
 //! icons, so Windows never delivers mouse input to it: the icon layer is on top.
 //! A low-level mouse hook watches the cursor instead. When it is over empty desktop
 //! (not over an icon, not over another app) the position and buttons are sent to the
-//! page as `desk-mouse` events, which the page turns into hover / click / drag / wheel.
+//! page as `desk-mouse` events, which the page turns into hover / click / drag / wheel. Over another
+//! display the same goes to that display's mirror window (`desk-mouse-<its label>`), so its playlist,
+//! cover flow and TikTok grid can be clicked too.
 
 use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, Ordering};
 use std::sync::mpsc::{channel, Sender};
@@ -30,11 +32,19 @@ struct Ev {
     x: i32,
     y: i32,
     d: i32,
+    /// "" = the main skin, else a mirror window's label
+    to: String,
 }
 
+/// Where the mouse is being sent: the window it hovers, and the one holding a press (with the origin
+/// of its display, so a drag keeps its coordinates even past the display's edge).
+struct Route {
+    hover: Option<String>,
+    cap: Option<(String, i32, i32)>,
+}
+static ROUTE: Mutex<Route> = Mutex::new(Route { hover: None, cap: None });
+
 static TX: OnceLock<Mutex<Sender<Ev>>> = OnceLock::new();
-static CAPTURED: AtomicBool = AtomicBool::new(false);
-static OVER: AtomicBool = AtomicBool::new(false);
 static LAST_MOVE: Mutex<Option<Instant>> = Mutex::new(None);
 static OWN_PID: AtomicIsize = AtomicIsize::new(0);
 
@@ -68,9 +78,13 @@ fn side_button(msg: u32, data: u32) -> (u32, bool) {
 }
 
 fn send(k: &'static str, x: i32, y: i32, d: i32) {
+    send_to(k, x, y, d, "");
+}
+
+fn send_to(k: &'static str, x: i32, y: i32, d: i32, to: &str) {
     if let Some(tx) = TX.get() {
         if let Ok(tx) = tx.lock() {
-            let _ = tx.send(Ev { k, x, y, d });
+            let _ = tx.send(Ev { k, x, y, d, to: to.to_string() });
         }
     }
 }
@@ -134,6 +148,9 @@ unsafe fn over_desktop(pt: POINT, check_icon: bool) -> bool {
     if !main.is_invalid() && (w == main || IsChild(main, w).as_bool()) {
         return true;
     }
+    if desktop::is_mirror_window(w) {
+        return true;
+    }
     match class_of(w).as_str() {
         "SysListView32" => !(check_icon && over_icon(w, pt)),
         "SHELLDLL_DefView" | "WorkerW" | "Progman" => true,
@@ -173,47 +190,55 @@ unsafe extern "system" fn hook(code: i32, wp: WPARAM, lp: LPARAM) -> LRESULT {
     }
     let pt = ms.pt;
     let (mx, my, sw, sh) = desktop::target_rect();
-    let inside = pt.x >= mx && pt.x < mx + sw && pt.y >= my && pt.y < my + sh;
-    let (x, y) = (pt.x - mx, pt.y - my);
+    // the window under the mouse: the main skin ("") or the mirror on another display
+    let at: Option<(String, i32, i32)> = if pt.x >= mx && pt.x < mx + sw && pt.y >= my && pt.y < my + sh {
+        Some((String::new(), pt.x - mx, pt.y - my))
+    } else {
+        crate::mirror::target_at(pt.x, pt.y)
+    };
     let msg = wp.0 as u32;
-    let captured = CAPTURED.load(Ordering::Relaxed);
+    let mut r = ROUTE.lock().unwrap_or_else(|e| e.into_inner());
 
     match msg {
         WM_MOUSEMOVE => {
-            if captured {
-                send("move", x, y, 0);
-            } else if inside && over_desktop(pt, false) {
-                OVER.store(true, Ordering::Relaxed);
+            if let Some((to, ox, oy)) = r.cap.clone() {
+                send_to("move", pt.x - ox, pt.y - oy, 0, &to);
+            } else if let Some((to, x, y)) = at.filter(|_| over_desktop(pt, false)) {
+                if r.hover.as_deref() != Some(to.as_str()) {
+                    if let Some(old) = r.hover.replace(to.clone()) {
+                        send_to("leave", 0, 0, 0, &old);
+                    }
+                }
                 let mut last = LAST_MOVE.lock().unwrap_or_else(|e| e.into_inner());
                 if last.map(|t| t.elapsed() >= Duration::from_millis(14)).unwrap_or(true) {
                     *last = Some(Instant::now());
-                    send("move", x, y, 0);
+                    send_to("move", x, y, 0, &to);
                 }
-            } else if OVER.swap(false, Ordering::Relaxed) {
-                send("leave", 0, 0, 0);
+            } else if let Some(old) = r.hover.take() {
+                send_to("leave", 0, 0, 0, &old);
             }
         }
         WM_LBUTTONDOWN => {
-            if inside && over_desktop(pt, true) {
-                CAPTURED.store(true, Ordering::Relaxed);
-                send("down", x, y, 0);
+            if let Some((to, x, y)) = at.filter(|_| over_desktop(pt, true)) {
+                r.cap = Some((to.clone(), pt.x - x, pt.y - y));
+                send_to("down", x, y, 0, &to);
                 return LRESULT(1); // the desktop must not start a selection rectangle
             }
         }
         WM_LBUTTONUP => {
-            if captured {
-                CAPTURED.store(false, Ordering::Relaxed);
-                send("up", x, y, 0);
+            if let Some((to, ox, oy)) = r.cap.take() {
+                send_to("up", pt.x - ox, pt.y - oy, 0, &to);
                 return LRESULT(1);
             }
         }
         WM_MOUSEWHEEL => {
-            if inside && over_desktop(pt, false) {
-                send("wheel", x, y, ((ms.mouseData >> 16) as i16) as i32);
+            if let Some((to, x, y)) = at.filter(|_| over_desktop(pt, false)) {
+                send_to("wheel", x, y, ((ms.mouseData >> 16) as i16) as i32, &to);
             }
         }
         _ => {}
     }
+    drop(r);
     CallNextHookEx(None, code, wp, lp)
 }
 
@@ -238,7 +263,9 @@ pub fn start(app: AppHandle) {
                     let _ = app.emit("bind-captured", spec);
                 }
                 _ => {
-                    let _ = app.emit("desk-mouse", json!({"k": e.k, "x": e.x, "y": e.y, "d": e.d}));
+                    // the main skin listens to "desk-mouse", a mirror window to "desk-mouse-<its label>"
+                    let ev = if e.to.is_empty() { "desk-mouse".to_string() } else { format!("desk-mouse-{}", e.to) };
+                    let _ = app.emit(&ev, json!({"k": e.k, "x": e.x, "y": e.y, "d": e.d}));
                 }
             }
         }

@@ -3,6 +3,15 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.18
+
+### New
+- The other displays can be clicked: pick a song in their playlist or cover flow and it plays on the main display. Works on Windows, on Linux, and on macOS when Wallplayer sits over the Finder icons.
+
+### Changed
+- TikTok on a portrait (upright) display: the video and its buttons are bigger, and the video's details and Up next sit under the video instead of beside it.
+- TikTok on the other displays: only the blurred picture of the video playing on the main display shows there, without the still of the video, its buttons, details or the clock.
+
 ## 1.0.17
 
 ### Changed

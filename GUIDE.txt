@@ -132,7 +132,8 @@ Esc or a click outside closes it.
   Blur softens the background. The ◎ button turns the video background on and off.
   Display: which screen Wallplayer uses (or tray menu → "Move to next display"). Portrait screens get a
   vertical layout. Tray menu → "Fill other displays" shows the same skin on the other screens, without
-  controls or sound; they follow the main screen's settings. Video quality (YouTube): Auto, 360p … 4K.
+  the player bar or sound; they follow the main screen's settings. Their playlist and cover flow can be
+  clicked: the song you pick plays on the main screen. Video quality (YouTube): Auto, 360p … 4K.
 - Clock: on / off; 7 styles; position Top / Top left / Top right / Bottom left / Bottom right.
 - Lyrics: Player style (karaoke) or YouTube captions; 14 effects (Stack, Apple Music, Line, Bounce,
   Typewriter, Glow, Pop, Karaoke fill, Shake, Jiggle, Glitch, Wave, Zoom, Slide); position Center / Left /
@@ -179,7 +180,10 @@ TIKTOK
 - How it works: TikTok has no public feed for apps, so Wallplayer opens TikTok's own page out of sight
   (with your TikTok session) to read the list of videos, and plays each video in TikTok's official embed
   player. If TikTok asks for a check, press "Open TikTok", answer it, then "Done".
-- Other displays show the same video (as a still frame) and its details.
+- Other displays show only the blurred picture of the video playing on the main screen: no video, buttons
+  or details there.
+- On a portrait (upright) screen the video and its buttons are bigger, and the video's details and
+  "Up next" sit under the video.
 - Pick another platform to leave TikTok. Wallplayer starts again on TikTok if that is where you left it
   (paused until you press play).
 
@@ -251,12 +255,12 @@ release page:
 What differs from Windows:
 - Linux: Wallplayer becomes the desktop itself (an X11 desktop window, the kind file managers use), below
   every app and on every workspace; "Show desktop" leaves it in place. It covers the desktop icons of
-  your file manager, if it shows any, and takes the mouse directly. On a Wayland session it runs through
+  your file manager, if it shows any, and takes the mouse directly (the other displays too). On a Wayland session it runs through
   XWayland. "Start at login" adds ~/.config/autostart/wallplayer.desktop. Songs started from Wallplayer in other
   apps (Spotify, a browser) are read through MPRIS; the system volume from PipeWire / PulseAudio; the
   ambient light hears the sound through `parec` or `pw-record`.
 - macOS: Wallplayer sits on the desktop of every Space, under all apps. With "Hide desktop icons" on it
-  covers Finder's icons and takes the mouse; off, it sits under them. "Open at login" adds a
+  covers Finder's icons and takes the mouse (on every display); off, it sits under them. "Open at login" adds a
   LaunchAgent (~/Library/LaunchAgents/com.tan.wallplayer.plist). The app is not signed by Apple: the
   first time, right-click Wallplayer.app → Open. Songs you start from Wallplayer in Spotify or Apple
   Music show in the player (macOS asks once whether Wallplayer may control them). The search shortcut is ⇧⌘Space, because

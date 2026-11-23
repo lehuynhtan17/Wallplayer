@@ -7,7 +7,8 @@
 //!   - macOS: an event monitor (the press also reaches the app under the mouse).
 //! * Wallpaper mode forwarding. Linux: not needed, the skin takes the mouse itself (see desktop.rs).
 //!   macOS: only when the skin sits under Finder's icons ("Hide desktop icons" off): moves, clicks
-//!   and the wheel over the bare desktop are sent to the page as `desk-mouse` events, as on Windows.
+//!   and the wheel over the bare desktop are sent to the page as `desk-mouse` events, as on Windows;
+//!   over another display, to that display's mirror window (`desk-mouse-<its label>`).
 
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
@@ -186,8 +187,9 @@ mod mac {
     use super::pressed;
     use crate::desktop;
 
-    static DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-    static OVER: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    /// the window holding a press (label, "" = main skin) and the one the mouse hovers
+    static DOWN: Mutex<Option<String>> = Mutex::new(None);
+    static OVER: Mutex<Option<String>> = Mutex::new(None);
     static LAST_MOVE: Mutex<Option<Instant>> = Mutex::new(None);
     /// (when, app windows) — the window list is asked at most 4 times a second
     static APPS: Mutex<Option<(Instant, Vec<crate::mac::CGRect>)>> = Mutex::new(None);
@@ -233,40 +235,56 @@ mod mac {
         let (mx, my, sw, sh) = desktop::target_rect();
         let inside = x >= mx as f64 && x < (mx + sw) as f64 && y >= my as f64 && y < (my + sh) as f64;
         let s = *SCALE.lock().unwrap_or_else(|e| e.into_inner());
-        // the page divides by its devicePixelRatio, like the pixels Windows sends
-        let (px, py) = (((x - mx as f64) * s).round() as i32, ((y - my as f64) * s).round() as i32);
-        let send = |k: &str| {
-            let _ = app.emit("desk-mouse", json!({"k": k, "x": px, "y": py, "d": d}));
+        // the window under the mouse: the main skin ("": pixels, the page divides by its devicePixelRatio
+        // like the pixels Windows sends) or the mirror on another display (points = CSS pixels, "c")
+        let at: Option<(String, i32, i32, bool)> = if inside {
+            Some((String::new(), ((x - mx as f64) * s).round() as i32, ((y - my as f64) * s).round() as i32, false))
+        } else {
+            crate::mirror::target_at(x.round() as i32, y.round() as i32).map(|(l, lx, ly)| (l, lx, ly, true))
         };
+        let emit = |to: &str, k: &str, px: i32, py: i32, css: bool| {
+            let ev = if to.is_empty() { "desk-mouse".to_string() } else { format!("desk-mouse-{to}") };
+            let _ = app.emit(&ev, json!({"k": k, "x": px, "y": py, "d": d, "c": css}));
+        };
+        let held = DOWN.lock().unwrap_or_else(|e| e.into_inner()).clone();
         match k {
             "move" => {
-                if DOWN.load(Ordering::Relaxed) {
-                    send("move");
-                } else if inside && over_desktop(x, y) {
-                    OVER.store(true, Ordering::Relaxed);
+                if let Some(to) = held {
+                    // a drag stays with the window it started on (coordinates may run past its edge)
+                    if let Some((t, px, py, css)) = at.clone().filter(|a| a.0 == to) {
+                        emit(&t, "move", px, py, css);
+                    }
+                } else if let Some((to, px, py, css)) = at.filter(|_| over_desktop(x, y)) {
+                    let mut over = OVER.lock().unwrap_or_else(|e| e.into_inner());
+                    if over.as_deref() != Some(to.as_str()) {
+                        if let Some(old) = over.replace(to.clone()) {
+                            emit(&old, "leave", 0, 0, false);
+                        }
+                    }
                     let mut last = LAST_MOVE.lock().unwrap_or_else(|e| e.into_inner());
                     if last.map(|t| t.elapsed() >= Duration::from_millis(14)).unwrap_or(true) {
                         *last = Some(Instant::now());
-                        send("move");
+                        emit(&to, "move", px, py, css);
                     }
-                } else if OVER.swap(false, Ordering::Relaxed) {
-                    send("leave");
+                } else if let Some(old) = OVER.lock().unwrap_or_else(|e| e.into_inner()).take() {
+                    emit(&old, "leave", 0, 0, false);
                 }
             }
             "down" => {
-                if inside && over_desktop(x, y) {
-                    DOWN.store(true, Ordering::Relaxed);
-                    send("down");
+                if let Some((to, px, py, css)) = at.filter(|_| over_desktop(x, y)) {
+                    *DOWN.lock().unwrap_or_else(|e| e.into_inner()) = Some(to.clone());
+                    emit(&to, "down", px, py, css);
                 }
             }
             "up" => {
-                if DOWN.swap(false, Ordering::Relaxed) {
-                    send("up");
+                if let Some(to) = DOWN.lock().unwrap_or_else(|e| e.into_inner()).take() {
+                    let (px, py, css) = at.filter(|a| a.0 == to).map(|a| (a.1, a.2, a.3)).unwrap_or((-1, -1, to.as_str() != ""));
+                    emit(&to, "up", px, py, css);
                 }
             }
             "wheel" => {
-                if inside && over_desktop(x, y) {
-                    send("wheel");
+                if let Some((to, px, py, css)) = at.filter(|_| over_desktop(x, y)) {
+                    emit(&to, "wheel", px, py, css);
                 }
             }
             _ => {}

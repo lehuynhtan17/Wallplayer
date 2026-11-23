@@ -103,7 +103,8 @@ cũng được), nội dung bên phải. Esc hoặc bấm ra ngoài để đóng
   Thanh Blur làm mờ nền. Nút ◎ bật/tắt video nền. Phụ đề và ô "video tiếp theo" của YouTube luôn được ẩn.
   Display: chọn màn hình hiển thị (hoặc khay hệ thống → "Move to next display"). Màn hình dọc tự xếp dọc.
   Nhiều màn hình (khay hệ thống → "Fill other displays"): các màn còn lại hiện cùng giao diện theo cài đặt
-  của màn chính, không có nút bấm và không phát tiếng.
+  của màn chính, không có thanh phát và không phát tiếng. Playlist và cover flow ở màn phụ bấm được: bài bạn
+  chọn sẽ phát ở màn chính.
   Video quality (YouTube): Auto, 360p … 4K (YouTube chọn mức gần nhất mà video thật sự có).
 - Đồng hồ: bật/tắt; 7 kiểu Tall, Outline, Thin, Rounded, Serif, Bold, Mono;
   vị trí Top / Top left / Top right / Bottom left / Bottom right.
@@ -187,7 +188,8 @@ TIKTOK
 - Cách hoạt động: TikTok không mở bảng tin cho app khác, nên Wallplayer mở chính trang TikTok ở chỗ khuất (với
   phiên đăng nhập TikTok của bạn) để đọc danh sách video, và phát từng video bằng trình phát nhúng chính thức
   của TikTok. Nếu TikTok đòi xác minh, bấm "Mở TikTok", làm theo, rồi bấm "Xong".
-- Màn hình phụ hiện cùng video (ảnh tĩnh) và thông tin của nó.
+- Màn hình phụ chỉ hiện nền mờ lấy từ hình của video đang phát ở màn chính: không có video, nút hay thông tin.
+- Màn hình dọc: khung video và các nút to hơn, thông tin video và "Tiếp theo" nằm dưới video.
 - Chọn nền tảng khác để thoát TikTok. Lần mở sau Wallplayer vẫn ở TikTok nếu bạn thoát khi đang ở đó (đứng yên
   cho tới khi bạn bấm phát).
 
@@ -257,12 +259,12 @@ Hai bản này chưa được chạy thử trên máy Linux hay Mac thật. Mỗ
 Khác với Windows:
 - Linux: Wallplayer trở thành chính desktop (cửa sổ desktop kiểu X11, loại mà trình quản lý file dùng), nằm
   dưới mọi app và có mặt ở mọi workspace; "Show desktop" không làm nó biến mất. Nó phủ lên icon desktop
-  của trình quản lý file (nếu có) và nhận chuột trực tiếp. Trên phiên Wayland, app chạy qua XWayland.
+  của trình quản lý file (nếu có) và nhận chuột trực tiếp (cả ở màn phụ). Trên phiên Wayland, app chạy qua XWayland.
   "Mở khi đăng nhập" tạo file ~/.config/autostart/wallplayer.desktop. Bài mở từ Wallplayer sang app khác
   (Spotify, trình duyệt) đọc qua MPRIS; âm lượng hệ thống qua PipeWire / PulseAudio; viền sáng nghe nhạc
   qua `parec` hoặc `pw-record`.
 - macOS: Wallplayer nằm trên desktop của mọi Space, dưới mọi app. Bật "Ẩn icon desktop" thì nó phủ lên
-  icon của Finder và nhận chuột; tắt thì nó nằm dưới các icon. "Mở khi đăng nhập" tạo một LaunchAgent
+  icon của Finder và nhận chuột (ở mọi màn hình); tắt thì nó nằm dưới các icon. "Mở khi đăng nhập" tạo một LaunchAgent
   (~/Library/LaunchAgents/com.tan.wallplayer.plist). App chưa được Apple ký: lần đầu hãy chuột phải
   Wallplayer.app → Open. Bài bạn mở từ Wallplayer sang Spotify hay Apple Music hiện lên trình phát
   (macOS hỏi một lần có cho Wallplayer điều khiển không). Phím tắt tìm nhạc là ⇧⌘Space, vì macOS dùng ⌃⌥Space để đổi bàn phím

@@ -1,15 +1,30 @@
 //! Companion windows for the other monitors.
 //!
 //! The main skin lives on one monitor. Every other monitor gets a "mirror"
-//! window: the same `ui/index.html` in display-only mode (no controls, never
-//! plays sound). It reads the same saved settings, and the main window
-//! broadcasts what plays with the `mirror-state` event.
+//! window: the same `ui/index.html` in mirror mode (never plays sound; its
+//! playlist, cover flow and TikTok grid can be clicked, which asks the main
+//! window to play: `mirror-cmd`). It reads the same saved settings, and the
+//! main window broadcasts what plays with the `mirror-state` event.
 
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 use crate::accounts::{BROWSER_ARGS, UA as USER_AGENT};
 use crate::{desktop, AppState};
 
+
+/// Where each mirror window is (its monitor's rectangle, in the same units as `desktop::target_rect`),
+/// so the desktop mouse forwarding (Windows, macOS under Finder's icons) can reach the other displays.
+static TARGETS: std::sync::Mutex<Vec<(String, i32, i32, i32, i32)>> = std::sync::Mutex::new(Vec::new());
+
+/// The mirror window under a desktop point: its label and the point inside its monitor. (Linux needs no
+/// forwarding: the skin windows take the mouse themselves.)
+#[cfg_attr(target_os = "linux", allow(dead_code))]
+pub fn target_at(x: i32, y: i32) -> Option<(String, i32, i32)> {
+    let v = TARGETS.lock().unwrap_or_else(|e| e.into_inner());
+    v.iter()
+        .find(|(_, mx, my, w, h)| x >= *mx && x < mx + w && y >= *my && y < my + h)
+        .map(|(l, mx, my, _, _)| (l.clone(), x - mx, y - my))
+}
 
 fn label_for(monitor_id: &str) -> String {
     let clean: String = monitor_id.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
@@ -31,6 +46,7 @@ pub fn sync(app: &AppHandle) {
             desktop::monitors().into_iter().filter(|m| m.id != main_id).collect()
         };
         let wanted_labels: Vec<String> = wanted.iter().map(|m| label_for(&m.id)).collect();
+        *TARGETS.lock().unwrap_or_else(|e| e.into_inner()) = wanted.iter().map(|m| (label_for(&m.id), m.x, m.y, m.w, m.h)).collect();
 
         // put away mirrors that are no longer needed: hidden and emptied, not destroyed (tearing a
         // window down can crash the WebView2 engine all Wallplayer windows share); reused if the
