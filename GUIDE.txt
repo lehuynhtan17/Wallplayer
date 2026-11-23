@@ -243,7 +243,12 @@ at start to look for a new version (you can turn it off). Other services (YouTub
 lyrics, translation) are used only when you use that feature. Details: PRIVACY.md on GitHub.
 
 LINUX AND MACOS (PREVIEW)
-These builds have not been tried on a real Linux PC or Mac yet. What differs from Windows:
+These builds have not been tried on a real Linux PC or Mac yet. Each system has its own zip on the
+release page:
+- Linux (64-bit): Wallplayer-Linux-x64.zip. Unzip it and run Wallplayer/wallplayer. It needs WebKitGTK 4.1
+  (Ubuntu 22.04 or newer; if it does not start: sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1).
+- macOS (Apple silicon and Intel): Wallplayer-macOS.zip. Unzip it and move Wallplayer.app to Applications.
+What differs from Windows:
 - Linux: Wallplayer becomes the desktop itself (an X11 desktop window, the kind file managers use), below
   every app and on every workspace; "Show desktop" leaves it in place. It covers the desktop icons of
   your file manager, if it shows any, and takes the mouse directly. On a Wayland session it runs through

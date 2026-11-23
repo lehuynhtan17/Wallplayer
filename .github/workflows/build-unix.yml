@@ -2,8 +2,8 @@ name: Linux and macOS (test builds)
 
 # Builds Wallplayer for Linux and macOS, runs it on GitHub's Linux machine and real Mac, and records
 # each test run as a video with captions. Also builds Windows from the same code (to be sure the port
-# did not break it). Everything is kept as downloads on the run page; nothing is published: the
-# release (Windows) still comes from build.yml.
+# did not break it). Everything is kept as downloads on the run page; nothing is published: releases
+# (one zip per system) come from build.yml, whose Linux / macOS build steps match the ones here.
 
 on:
   push:

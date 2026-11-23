@@ -249,7 +249,11 @@ NẾU MỞ MÁY MÀ WALLPLAYER KHÔNG TỰ CHẠY
    "started with Windows".
 
 LINUX VÀ MACOS (BẢN THỬ)
-Hai bản này chưa được chạy thử trên máy Linux hay Mac thật. Khác với Windows:
+Hai bản này chưa được chạy thử trên máy Linux hay Mac thật. Mỗi hệ có file zip riêng ở trang phát hành:
+- Linux (64-bit): Wallplayer-Linux-x64.zip. Giải nén rồi chạy Wallplayer/wallplayer. Cần WebKitGTK 4.1
+  (Ubuntu 22.04 trở lên; nếu không mở được: sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1).
+- macOS (chip Apple và Intel): Wallplayer-macOS.zip. Giải nén rồi kéo Wallplayer.app vào Applications.
+Khác với Windows:
 - Linux: Wallplayer trở thành chính desktop (cửa sổ desktop kiểu X11, loại mà trình quản lý file dùng), nằm
   dưới mọi app và có mặt ở mọi workspace; "Show desktop" không làm nó biến mất. Nó phủ lên icon desktop
   của trình quản lý file (nếu có) và nhận chuột trực tiếp. Trên phiên Wayland, app chạy qua XWayland.

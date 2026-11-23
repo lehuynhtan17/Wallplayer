@@ -40,7 +40,15 @@ Wallplayer lives *behind* your desktop icons, the same way Wallpaper Engine does
 
 ## Download
 
-Download `Wallplayer-Windows-x64.zip` from [Releases](https://github.com/lehuynhtan17/Wallplayer/releases).
+Download the zip for your system from [Releases](https://github.com/lehuynhtan17/Wallplayer/releases):
+
+| System | File |
+|---|---|
+| Windows 10 / 11 (64-bit) | `Wallplayer-Windows-x64.zip` |
+| Linux, 64-bit (preview) | `Wallplayer-Linux-x64.zip` |
+| macOS, Apple silicon and Intel (preview) | `Wallplayer-macOS.zip` |
+
+The Linux and macOS builds are previews, not yet tried on real machines: see *Linux and macOS* in [`GUIDE.txt`](GUIDE.txt). The quick start below is for Windows.
 Release notes for each version are in [`CHANGELOG.md`](CHANGELOG.md).
 See the [Code signing policy](CODE_SIGNING.md).
 
@@ -107,8 +115,8 @@ This program will not transfer any information to other networked systems unless
 ## Releasing
 
 1. Write the release notes under a new `## x.y.z` heading in `CHANGELOG.md` and set the same version in `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`.
-2. Push to `main`. GitHub Actions builds `Wallplayer.exe`; download the build from the run to test it on Windows.
-3. Open **Actions → Build and release → Run workflow**, tick *Publish a release* (or push a tag `Vx.y.z`). The workflow builds again and publishes release `Vx.y.z` with the notes (it can also sign through SignPath if the project is accepted later: the step only runs when the `SIGNPATH_*` settings exist).
+2. Push to `main`. GitHub Actions builds `Wallplayer.exe` (download the build from the run to test it on Windows) and runs the recorded Linux and macOS tests (`build-unix.yml`).
+3. Open **Actions → Build and release → Run workflow**, tick *Publish a release* (or push a tag `Vx.y.z`). The workflow builds Windows, Linux and macOS and publishes release `Vx.y.z` with the notes and one zip per system: `Wallplayer-Windows-x64.zip`, `Wallplayer-Linux-x64.zip`, `Wallplayer-macOS.zip`. Nothing is published unless all three builds work. Untick *Publish a release* for a dry run that only builds the three zips (kept on the run page). Signing through SignPath, if the project is accepted later, only runs when the `SIGNPATH_*` settings exist.
 
 ## License
 
