@@ -65,6 +65,8 @@ check "skin is a desktop-layer window" 't xprop -id $W _NET_WM_WINDOW_TYPE | gre
 check "skin covers the screen (1920x1080)" 't xwininfo -id $W | grep -q "Width: 1920" && t xwininfo -id $W | grep -q "Height: 1080"'
 check "skin is on every workspace" 't xprop -id $W _NET_WM_DESKTOP | grep -q 4294967295'
 check "sound analysis (parec) runs" 'pgrep -x parec'
+# the stand-in tray of this test desktop (a real desktop has its own panel): out of sight until step 10
+TRAY=$(t xdotool search --class stalonetray | head -1); [ -n "$TRAY" ] && t xdotool windowunmap "$TRAY"
 
 cap "2. Open another app: it sits above, the skin stays below like a wallpaper"
 xterm -geometry 92x24+260+170 > /dev/null 2>&1 &
@@ -111,9 +113,11 @@ paplay --device=speaker /tmp/wp-beat.wav &
 sleep 8
 pkill paplay; sleep 1.5
 
-cap "10. Tray menu (top right)"
+cap "10. Tray menu (top right; this test desktop's stand-in tray)"
+[ -n "$TRAY" ] && t xdotool windowmap "$TRAY"; sleep 1
 click 1788 12; sleep 3
 t xdotool key Escape; sleep 1
+[ -n "$TRAY" ] && t xdotool windowunmap "$TRAY"
 
 cap "11. Plug in a second monitor: the right one gets a copy of the skin"
 t xrandr --setmonitor LEFT-1 960/254x1080/286+0+0 screen > /dev/null

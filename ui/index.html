@@ -230,6 +230,8 @@ img{display:block}
 #flowLabel small{font-weight:500;color:var(--txt2)}
 #flowLabel{display:none}
 #flow{position:absolute;inset:0;perspective:62rem;perspective-origin:50% 45%}  /* no preserve-3d: cards stack by z-index (centre on top, then outward) */
+/* WebKit (Linux / macOS) leaves the cards flat unless the cover flow has a layer of its own from the start */
+.os-linux #flow,.os-macos #flow{will-change:transform}
 .fc{position:absolute;left:50%;top:0;width:21rem;margin-left:-10.5rem;padding:.9rem .9rem 1.15rem;border-radius:2.1rem;pointer-events:auto;cursor:pointer;
   background:linear-gradient(180deg,rgba(255,255,255,.17),rgba(var(--accent),.16) 72%,rgba(var(--accent),.24));
   -webkit-backdrop-filter:blur(1.8rem) saturate(160%);backdrop-filter:blur(1.8rem) saturate(160%);border:1px solid rgba(255,255,255,.28);
@@ -918,6 +920,7 @@ const OSW = OS === 'windows' ? null : (() => {
     [/\bWindows\b/g, mac ? 'macOS' : 'Linux'],
   ];
 })();
+if (OSW) document.documentElement.classList.add('os-' + OS);
 const osWords = t => {
   if (!OSW || !t || (t.indexOf('Windows') < 0 && !(OS === 'macos' && t.indexOf('Ctrl') >= 0))) return t;
   for (const [re, rp] of OSW) t = t.replace(re, rp);
