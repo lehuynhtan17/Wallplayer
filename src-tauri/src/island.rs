@@ -12,7 +12,9 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+#[cfg(windows)]
 use windows::Win32::Foundation::HWND;
+#[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW};
 
 use crate::desktop;
@@ -42,6 +44,7 @@ fn build(app: &AppHandle) -> Option<WebviewWindow> {
         .build()
         .map_err(|e| eprintln!("island window: {e}"))
         .ok()?;
+    #[cfg(windows)]
     if let Ok(h) = w.hwnd() {
         // not in Alt+Tab, and clicking it does not take the focus from the app you work in
         unsafe {

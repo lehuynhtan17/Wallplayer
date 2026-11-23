@@ -14,12 +14,15 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Manager, WebviewWindow};
+#[cfg(windows)]
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     ICoreWebView2ProcessFailedEventArgs2, COREWEBVIEW2_PROCESS_FAILED_KIND, COREWEBVIEW2_PROCESS_FAILED_KIND_BROWSER_PROCESS_EXITED,
     COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_EXITED, COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_UNRESPONSIVE,
     COREWEBVIEW2_PROCESS_FAILED_REASON,
 };
+#[cfg(windows)]
 use webview2_com::ProcessFailedEventHandler;
+#[cfg(windows)]
 use windows_core::Interface;
 
 /// Set when Wallplayer quits (or restarts itself) on purpose: its windows closing then is expected.
@@ -42,6 +45,7 @@ fn data_dir(app: &AppHandle) -> Option<PathBuf> {
 static APP: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
 
 /// Log from code that has no AppHandle at hand (the desktop watcher).
+#[cfg_attr(target_os = "macos", allow(dead_code))]
 pub fn note(line: &str) {
     if let Some(app) = APP.get() {
         log(app, line);
@@ -96,6 +100,7 @@ pub fn relaunch(app: AppHandle) {
 }
 
 /// Watch one window's web engine. `main`: the browser process ending relaunches the app.
+#[cfg(windows)]
 pub fn watch(win: &WebviewWindow, main: bool) {
     let app = win.app_handle().clone();
     let label = win.label().to_string();
@@ -128,3 +133,23 @@ pub fn watch(win: &WebviewWindow, main: bool) {
         let _ = core.add_ProcessFailed(&handler, &mut token);
     });
 }
+
+/// Linux: WebKitGTK runs each page in a web process of its own; when one dies (a crash, out of
+/// memory) its page is loaded again. The engine itself lives in Wallplayer's own process.
+#[cfg(target_os = "linux")]
+pub fn watch(win: &WebviewWindow, _main: bool) {
+    use webkit2gtk::WebViewExt;
+    let app = win.app_handle().clone();
+    let label = win.label().to_string();
+    let _ = win.with_webview(move |wv| {
+        let view = wv.inner();
+        view.connect_web_process_terminated(move |v, reason| {
+            log(&app, &format!("{label}: web process ended ({reason:?}): reloading the page"));
+            v.reload();
+        });
+    });
+}
+
+/// macOS: WebKit already brings a page back when its web process dies; nothing to add.
+#[cfg(target_os = "macos")]
+pub fn watch(_win: &WebviewWindow, _main: bool) {}

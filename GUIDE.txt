@@ -242,6 +242,23 @@ No account, no analytics, nothing is sent to the authors. On its own Wallplayer 
 at start to look for a new version (you can turn it off). Other services (YouTube, SoundCloud, Spotify,
 lyrics, translation) are used only when you use that feature. Details: PRIVACY.md on GitHub.
 
+LINUX AND MACOS (PREVIEW)
+These builds have not been tried on a real Linux PC or Mac yet. What differs from Windows:
+- Linux: Wallplayer becomes the desktop itself (an X11 desktop window, the kind file managers use), below
+  every app and on every workspace; "Show desktop" leaves it in place. It covers the desktop icons of
+  your file manager, if it shows any, and takes the mouse directly. On a Wayland session it runs through
+  XWayland. "Start at login" adds ~/.config/autostart/wallplayer.desktop. Music playing in other apps
+  (Spotify, browsers, VLC…) comes from MPRIS; the system volume from PipeWire / PulseAudio; the
+  ambient light hears the sound through `parec` or `pw-record`.
+- macOS: Wallplayer sits on the desktop of every Space, under all apps. With "Hide desktop icons" on it
+  covers Finder's icons and takes the mouse; off, it sits under them. "Open at login" adds a
+  LaunchAgent (~/Library/LaunchAgents/com.tan.wallplayer.plist). The app is not signed by Apple: the
+  first time, right-click Wallplayer.app → Open. Music in Spotify and Apple Music shows in the player
+  (macOS asks once whether Wallplayer may control them). The search shortcut is ⇧⌘Space, because
+  macOS uses ⌃⌥Space to switch the keyboard language. The ambient light follows its own animation:
+  macOS does not let apps hear the system sound without the Screen Recording permission.
+- Not on Linux / macOS: "High priority" (a Windows feature).
+
 KNOWN LIMITS
 - Some YouTube videos cannot be embedded; Wallplayer tries another one.
 - Google may refuse sign-in in an embedded window for some accounts.

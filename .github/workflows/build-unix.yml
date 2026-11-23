@@ -1,0 +1,136 @@
+name: Linux and macOS (test builds)
+
+# Builds Wallplayer for Linux and macOS, runs it on GitHub's Linux machine and real Mac, and records
+# each test run as a video with captions. Also builds Windows from the same code (to be sure the port
+# did not break it). Everything is kept as downloads on the run page; nothing is published: the
+# release (Windows) still comes from build.yml.
+
+on:
+  push:
+    branches: [main, custom, 'port/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System libraries (GTK, WebKitGTK, tray) and the test desktop
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev \
+            xvfb openbox pcmanfm stalonetray xterm x11-utils x11-xserver-utils xdotool wmctrl imagemagick ffmpeg \
+            pulseaudio pulseaudio-utils dbus-x11 python3-dbus python3-gi fonts-noto-core gstreamer1.0-plugins-good
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build
+        working-directory: src-tauri
+        run: cargo build --release
+
+      - name: Package
+        run: |
+          mkdir -p dist/Wallplayer
+          cp src-tauri/target/release/wallplayer dist/Wallplayer/wallplayer
+          chmod +x dist/Wallplayer/wallplayer
+          cp GUIDE.txt HUONG-DAN.txt dist/Wallplayer/
+          cp src-tauri/icons/128x128.png dist/Wallplayer/wallplayer.png
+          cd dist && zip -r ../Wallplayer-Linux-x64.zip Wallplayer
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wallplayer-Linux-x64
+          path: Wallplayer-Linux-x64.zip
+
+      - name: Test run (recorded)
+        run: bash .github/scripts/test-linux.sh "$PWD/dist/Wallplayer/wallplayer" "$PWD/test-linux"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Test-video-Linux
+          path: test-linux
+
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build Wallplayer.app (Apple silicon + Intel)
+        working-directory: src-tauri
+        run: |
+          npx --yes @tauri-apps/cli@2 icon icons/icon.png -o /tmp/wp-icons
+          npx --yes @tauri-apps/cli@2 build --target universal-apple-darwin --bundles app \
+            --config '{"bundle":{"active":true,"icon":["/tmp/wp-icons/32x32.png","/tmp/wp-icons/128x128.png","/tmp/wp-icons/128x128@2x.png","/tmp/wp-icons/icon.icns"]}}'
+
+      - name: Package
+        run: |
+          mkdir -p dist/Wallplayer
+          cp -R src-tauri/target/universal-apple-darwin/release/bundle/macos/Wallplayer.app dist/Wallplayer/
+          codesign --force --deep --sign - dist/Wallplayer/Wallplayer.app
+          cp GUIDE.txt HUONG-DAN.txt dist/Wallplayer/
+          cd dist && ditto -c -k --sequesterRsrc --keepParent Wallplayer ../Wallplayer-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wallplayer-macOS
+          path: Wallplayer-macOS.zip
+
+      - name: Test run (recorded)
+        run: |
+          brew install ffmpeg > /dev/null
+          bash .github/scripts/test-macos.sh "$PWD/dist/Wallplayer/Wallplayer.app" "$PWD/test-macos"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Test-video-macOS
+          path: test-macos
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build
+        working-directory: src-tauri
+        run: cargo build --release
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/Wallplayer | Out-Null
+          Copy-Item src-tauri/target/release/wallplayer.exe dist/Wallplayer/Wallplayer.exe
+          $dll = Get-ChildItem src-tauri/target/release -Recurse -Filter WebView2Loader.dll -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dll) { Copy-Item $dll.FullName dist/Wallplayer/ }
+          Copy-Item GUIDE.txt, HUONG-DAN.txt dist/Wallplayer/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wallplayer-Windows-x64-port-test
+          path: dist

@@ -248,6 +248,23 @@ NẾU MỞ MÁY MÀ WALLPLAYER KHÔNG TỰ CHẠY
 3. Vẫn không được: mở %LOCALAPPDATA%\com.tan.wallplayer\wallplayer.log, nếu Windows có chạy app sẽ có dòng
    "started with Windows".
 
+LINUX VÀ MACOS (BẢN THỬ)
+Hai bản này chưa được chạy thử trên máy Linux hay Mac thật. Khác với Windows:
+- Linux: Wallplayer trở thành chính desktop (cửa sổ desktop kiểu X11, loại mà trình quản lý file dùng), nằm
+  dưới mọi app và có mặt ở mọi workspace; "Show desktop" không làm nó biến mất. Nó phủ lên icon desktop
+  của trình quản lý file (nếu có) và nhận chuột trực tiếp. Trên phiên Wayland, app chạy qua XWayland.
+  "Mở khi đăng nhập" tạo file ~/.config/autostart/wallplayer.desktop. Nhạc phát ở app khác (Spotify,
+  trình duyệt, VLC…) lấy qua MPRIS; âm lượng hệ thống qua PipeWire / PulseAudio; viền sáng nghe nhạc
+  qua `parec` hoặc `pw-record`.
+- macOS: Wallplayer nằm trên desktop của mọi Space, dưới mọi app. Bật "Ẩn icon desktop" thì nó phủ lên
+  icon của Finder và nhận chuột; tắt thì nó nằm dưới các icon. "Mở khi đăng nhập" tạo một LaunchAgent
+  (~/Library/LaunchAgents/com.tan.wallplayer.plist). App chưa được Apple ký: lần đầu hãy chuột phải
+  Wallplayer.app → Open. Nhạc trong Spotify và Apple Music hiện lên trình phát (macOS hỏi một lần có cho
+  Wallplayer điều khiển không). Phím tắt tìm nhạc là ⇧⌘Space, vì macOS dùng ⌃⌥Space để đổi bàn phím
+  (Tiếng Việt ⇄ English). Viền sáng chạy theo hiệu ứng riêng: macOS không cho app nghe âm thanh hệ thống
+  nếu chưa cấp quyền Ghi màn hình.
+- Không có trên Linux / macOS: "Ưu tiên cao" (High priority, tính năng của Windows).
+
 GIỚI HẠN ĐÃ BIẾT
 - Một số video YouTube chặn nhúng: app tự thử video khác.
 - Google có thể chặn đăng nhập trong cửa sổ nhúng ở một số tài khoản.

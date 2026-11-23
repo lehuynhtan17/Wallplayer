@@ -37,8 +37,9 @@ pub fn sync(app: &AppHandle) {
         // display comes back
         for (label, w) in app.webview_windows() {
             if label.starts_with("mirror-") && !wanted_labels.contains(&label) {
-                if let Ok(h) = w.hwnd() {
-                    desktop::remove_mirror(h.0 as isize);
+                let raw = crate::raw_of(&w);
+                if raw != 0 {
+                    desktop::remove_mirror(raw);
                 }
                 let _ = w.hide();
                 if let Ok(u) = tauri::Url::parse("about:blank") {
@@ -86,8 +87,10 @@ pub fn sync(app: &AppHandle) {
                     }
                 },
             };
-            let Ok(h) = win.hwnd() else { continue };
-            let raw = h.0 as isize;
+            let raw = crate::raw_of(&win);
+            if raw == 0 {
+                continue;
+            }
             desktop::add_mirror(raw, &m.id);
             let first = !app.state::<AppState>().mirrors_installed.lock().unwrap().contains(&raw);
             if first {

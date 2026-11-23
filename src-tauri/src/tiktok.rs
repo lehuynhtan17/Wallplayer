@@ -13,12 +13,17 @@ use std::time::Duration;
 use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
+#[cfg(windows)]
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     ICoreWebView2_2, COREWEBVIEW2_WEB_RESOURCE_CONTEXT, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_IMAGE, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_MEDIA,
 };
+#[cfg(windows)]
 use webview2_com::{ExecuteScriptCompletedHandler, WebResourceRequestedEventHandler};
+#[cfg(windows)]
 use windows_core::{Interface, HSTRING};
+#[cfg(windows)]
 use windows::Win32::Foundation::HWND;
+#[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_TOOLWINDOW};
 
 const LABEL: &str = "tiktok-feed";
@@ -163,6 +168,11 @@ fn url_for(mode: &str, query: &str) -> String {
 }
 
 /// Answer the hidden page's video and picture requests with nothing (see QUIET).
+/// (Windows only: WebKit has no such hook; there the hidden page just loads them.)
+#[cfg(not(windows))]
+fn quiet(_w: &WebviewWindow) {}
+
+#[cfg(windows)]
 fn quiet(w: &WebviewWindow) {
     let _ = w.with_webview(|wv| unsafe {
         let Ok(core) = wv.controller().CoreWebView2() else { return };
@@ -192,6 +202,9 @@ fn quiet(w: &WebviewWindow) {
 /// Out of sight and out of Alt+Tab, but still "on screen" for TikTok's page so it keeps loading.
 fn tuck(w: &WebviewWindow) {
     let _ = w.set_position(tauri::LogicalPosition::new(OFF, OFF));
+    #[cfg(not(windows))]
+    let _ = w.set_skip_taskbar(true);
+    #[cfg(windows)]
     if let Ok(h) = w.hwnd() {
         unsafe {
             let hwnd = HWND(h.0 as *mut core::ffi::c_void);
@@ -328,6 +341,65 @@ fn parse(res: &str) -> Take {
 }
 
 /// Run a script in one of the TikTok pages and get its result (JSON), or None.
+#[cfg(target_os = "linux")]
+async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
+    use javascriptcore::ValueExt;
+    use webkit2gtk::WebViewExt;
+    let w = app.get_webview_window(label)?;
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
+    let tx = Arc::new(Mutex::new(Some(tx)));
+    let js = js.to_string();
+    w.with_webview(move |wv| {
+        let tx2 = tx.clone();
+        wv.inner().evaluate_javascript(&js, None, None, None::<&gio::Cancellable>, move |r| {
+            // the result as JSON, like WebView2's ExecuteScript ("null" for undefined)
+            let json = r.ok().and_then(|v| v.to_json(0)).map(|s| s.to_string()).unwrap_or_else(|| "null".into());
+            if let Some(t) = tx2.lock().ok().and_then(|mut g| g.take()) {
+                let _ = t.send(json);
+            }
+        });
+    })
+    .ok()?;
+    match tokio::time::timeout(Duration::from_secs(4), rx).await {
+        Ok(Ok(res)) => Some(res),
+        _ => None,
+    }
+}
+
+/// Run a script in one of the TikTok pages and get its result (JSON), or None. Every script here is
+/// an expression: WebKit returns its JSON text as a string.
+#[cfg(target_os = "macos")]
+async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
+    use objc2::runtime::AnyObject;
+    use objc2_foundation::{NSError, NSString};
+    use objc2_web_kit::WKWebView;
+    let w = app.get_webview_window(label)?;
+    let (tx, rx) = tokio::sync::oneshot::channel::<String>();
+    let tx = Arc::new(Mutex::new(Some(tx)));
+    let js = format!("(() => {{ const r = ({js}); return r === undefined ? 'null' : JSON.stringify(r) }})()");
+    w.with_webview(move |wv| unsafe {
+        let view: &WKWebView = &*(wv.inner() as *const WKWebView);
+        let tx2 = tx.clone();
+        let done = block2::RcBlock::new(move |res: *mut AnyObject, _err: *mut NSError| {
+            let text = if res.is_null() {
+                "null".to_string()
+            } else {
+                (*res).downcast_ref::<NSString>().map(|s| s.to_string()).unwrap_or_else(|| "null".into())
+            };
+            if let Some(t) = tx2.lock().ok().and_then(|mut g| g.take()) {
+                let _ = t.send(text);
+            }
+        });
+        view.evaluateJavaScript_completionHandler(&NSString::from_str(&js), Some(&done));
+    })
+    .ok()?;
+    match tokio::time::timeout(Duration::from_secs(4), rx).await {
+        Ok(Ok(res)) => Some(res),
+        _ => None,
+    }
+}
+
+#[cfg(windows)]
 async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
     let w = app.get_webview_window(label)?;
     let (tx, rx) = tokio::sync::oneshot::channel::<String>();

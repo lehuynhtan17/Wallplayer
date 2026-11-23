@@ -17,17 +17,17 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "nat
 base64 = "0.22"
 regex = "1"
 urlencoding = "2"
-cpal = "0.15"
 rustfft = "6"
 sha2 = "0.10"
 sha1 = "0.10"
 rand = "0.8"
 tokio = { version = "1", features = ["time", "sync"] }
-winreg = "0.52"
 lofty = "0.22"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+cpal = "0.15"           # WASAPI loopback (audio.rs); Linux / macOS capture the sound their own way
 webview2-com = "0.39"   # same version as Tauri's: watch the web engine (guard.rs)
 windows-core = "0.62"
 windows = { version = "0.58", features = [
@@ -54,6 +54,26 @@ windows = { version = "0.58", features = [
   "Win32_System_Diagnostics_ToolHelp",
   "Win32_System_TaskScheduler",
 ] }
+
+# Linux: GTK / WebKitGTK (the same versions Tauri uses), X11 (desktop layer, monitors, mouse button)
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+gio = "0.18"
+glib = "0.18"
+webkit2gtk = { version = "=2.0.2", features = ["v2_40"] }
+javascriptcore-rs = { version = "=1.1.2", features = ["v2_28"] }
+x11rb = { version = "0.13", features = ["randr"] }
+libc = "0.2"
+
+# macOS: AppKit / WebKit through objc2 (the same versions Tauri uses), CoreGraphics
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSError", "NSGeometry", "NSThread", "objc2-core-foundation"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "block2", "objc2-core-foundation", "NSApplication", "NSEvent", "NSGraphics", "NSResponder", "NSRunningApplication", "NSScreen", "NSView", "NSWindow", "NSWorkspace"] }
+objc2-web-kit = { version = "0.3", default-features = false, features = ["std", "block2", "objc2-app-kit", "WKWebView"] }
+block2 = "0.6"
+core-foundation = "0.10"
+libc = "0.2"
 
 [profile.release]
 opt-level = "s"

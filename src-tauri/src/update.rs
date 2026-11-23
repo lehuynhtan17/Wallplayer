@@ -20,7 +20,21 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::AppState;
 
 const REPO: &str = "lehuynhtan17/Wallplayer";
+/// The release file for this system (the zip holds a `Wallplayer/` folder on every system).
+#[cfg(windows)]
 const ASSET: &str = "Wallplayer-Windows-x64.zip";
+#[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+const ASSET: &str = "Wallplayer-Linux-arm64.zip";
+#[cfg(all(target_os = "linux", not(target_arch = "aarch64")))]
+const ASSET: &str = "Wallplayer-Linux-x64.zip";
+#[cfg(target_os = "macos")]
+const ASSET: &str = "Wallplayer-macOS.zip";
+#[cfg(windows)]
+const OS_NAME: &str = "Windows";
+#[cfg(target_os = "linux")]
+const OS_NAME: &str = "Linux";
+#[cfg(target_os = "macos")]
+const OS_NAME: &str = "macOS";
 const UA: &str = concat!("Wallplayer/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Serialize, Clone, Default, Debug)]
@@ -177,7 +191,7 @@ async fn latest_api() -> Result<Release, String> {
     let asset = v["assets"]
         .as_array()
         .and_then(|a| a.iter().find(|x| x["name"].as_str() == Some(ASSET)))
-        .ok_or("The release has no Windows zip")?;
+        .ok_or_else(|| format!("The release has no {OS_NAME} zip"))?;
     Ok(Release {
         tag: v["tag_name"].as_str().unwrap_or("").to_string(),
         notes: v["body"].as_str().unwrap_or("").to_string(),
@@ -234,9 +248,14 @@ async fn download_and_stage(rel: &Release) -> Result<(), String> {
     if bytes.len() as u64 != size {
         return Err("Download was incomplete".into());
     }
+    install(bytes.as_ref())
+}
 
+/// Take the new files out of the zip and put them in place of the running ones.
+#[cfg(windows)]
+fn install(bytes: &[u8]) -> Result<(), String> {
     // take the files out of the zip (they sit in a "Wallplayer/" folder)
-    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes.as_ref())).map_err(|e| format!("Bad zip ({e})"))?;
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes)).map_err(|e| format!("Bad zip ({e})"))?;
     let mut new_exe: Option<Vec<u8>> = None;
     let mut others: Vec<(String, Vec<u8>)> = Vec::new();
     for i in 0..zip.len() {
@@ -267,6 +286,127 @@ async fn download_and_stage(rel: &Release) -> Result<(), String> {
     swap_in(&me, &new_exe)?;
     for (name, data) in others {
         let _ = swap_in(&dir.join(name), &data); // the exe is what matters
+    }
+    Ok(())
+}
+
+/// Linux: the zip holds `Wallplayer/wallplayer` and the guides. A running program can be replaced
+/// on Linux (its file is renamed aside, as on Windows).
+#[cfg(target_os = "linux")]
+fn install(bytes: &[u8]) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+    if std::env::var_os("APPIMAGE").is_some() {
+        return Err("This copy runs from an AppImage: download the new one from the release page".into());
+    }
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes)).map_err(|e| format!("Bad zip ({e})"))?;
+    let mut new_exe: Option<Vec<u8>> = None;
+    let mut others: Vec<(String, Vec<u8>)> = Vec::new();
+    for i in 0..zip.len() {
+        let mut f = zip.by_index(i).map_err(|e| e.to_string())?;
+        if f.is_dir() {
+            continue;
+        }
+        let name = f.name().rsplit(['/', '\\']).next().unwrap_or("").to_string();
+        if !(name == "wallplayer" || name == "HUONG-DAN.txt" || name == "GUIDE.txt") {
+            continue;
+        }
+        let mut buf = Vec::with_capacity(f.size() as usize);
+        f.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+        if name == "wallplayer" {
+            new_exe = Some(buf);
+        } else {
+            others.push((name, buf));
+        }
+    }
+    let new_exe = new_exe.ok_or("The zip has no wallplayer program")?;
+    if new_exe.len() < 1024 * 1024 || !new_exe.starts_with(b"\x7fELF") {
+        return Err("The new wallplayer program looks broken".into());
+    }
+    let me = exe().ok_or("No app path")?;
+    let dir = me.parent().ok_or("No app folder")?.to_path_buf();
+    swap_in(&me, &new_exe)?;
+    let _ = std::fs::set_permissions(&me, std::fs::Permissions::from_mode(0o755));
+    for (name, data) in others {
+        let _ = swap_in(&dir.join(name), &data);
+    }
+    Ok(())
+}
+
+/// The `.app` bundle the running program is in (…/Wallplayer.app/Contents/MacOS/wallplayer).
+#[cfg(target_os = "macos")]
+fn bundle() -> Option<PathBuf> {
+    exe()?.ancestors().find(|p| p.extension().map(|e| e == "app").unwrap_or(false)).map(|p| p.to_path_buf())
+}
+
+/// macOS: the zip holds `Wallplayer/Wallplayer.app`. The new bundle is unpacked next to the running
+/// one, which is then renamed aside (`.old`, removed at the next start) and replaced.
+#[cfg(target_os = "macos")]
+fn install(bytes: &[u8]) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes)).map_err(|e| format!("Bad zip ({e})"))?;
+    let me = exe().ok_or("No app path")?;
+    let Some(app) = bundle() else {
+        // not inside a bundle (a bare program): replace the program only
+        for i in 0..zip.len() {
+            let mut f = zip.by_index(i).map_err(|e| e.to_string())?;
+            if f.name().ends_with("Contents/MacOS/wallplayer") {
+                let mut buf = Vec::new();
+                f.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+                swap_in(&me, &buf)?;
+                let _ = std::fs::set_permissions(&me, std::fs::Permissions::from_mode(0o755));
+                return Ok(());
+            }
+        }
+        return Err("The zip has no Wallplayer.app".into());
+    };
+    let new = side(&app, ".new");
+    let _ = std::fs::remove_dir_all(&new);
+    std::fs::create_dir_all(&new).map_err(|e| format!("Can't write next to the app ({e})"))?;
+    let mut found = false;
+    for i in 0..zip.len() {
+        let mut f = zip.by_index(i).map_err(|e| e.to_string())?;
+        let Some(path) = f.enclosed_name() else { continue };
+        // the part after "….app/"
+        let parts: Vec<_> = path.components().collect();
+        let Some(at) = parts.iter().position(|c| c.as_os_str().to_string_lossy().ends_with(".app")) else { continue };
+        let rel: PathBuf = parts[at + 1..].iter().collect();
+        if rel.as_os_str().is_empty() {
+            continue;
+        }
+        found = true;
+        let dest = new.join(&rel);
+        if f.is_dir() {
+            std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
+            continue;
+        }
+        if let Some(d) = dest.parent() {
+            std::fs::create_dir_all(d).map_err(|e| e.to_string())?;
+        }
+        let mode = f.unix_mode().unwrap_or(0o644);
+        let mut buf = Vec::with_capacity(f.size() as usize);
+        f.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+        if mode & 0o170000 == 0o120000 {
+            // a symbolic link (frameworks)
+            let target = String::from_utf8_lossy(&buf).to_string();
+            std::os::unix::fs::symlink(target, &dest).map_err(|e| e.to_string())?;
+        } else {
+            std::fs::write(&dest, &buf).map_err(|e| e.to_string())?;
+            let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(if mode & 0o111 != 0 { 0o755 } else { 0o644 }));
+        }
+    }
+    let prog = new.join("Contents/MacOS").join(me.file_name().unwrap_or_default());
+    let head = std::fs::read(&prog).map(|b| b.into_iter().take(4).collect::<Vec<u8>>()).unwrap_or_default();
+    // Mach-O: 64-bit (CF FA ED FE) or universal (CA FE BA BE)
+    if !found || !(head == [0xCF, 0xFA, 0xED, 0xFE] || head == [0xCA, 0xFE, 0xBA, 0xBE]) {
+        let _ = std::fs::remove_dir_all(&new);
+        return Err("The new Wallplayer.app looks broken".into());
+    }
+    let old = side(&app, ".old");
+    let _ = std::fs::remove_dir_all(&old);
+    std::fs::rename(&app, &old).map_err(|e| format!("Can't replace {} ({e})", app.display()))?;
+    if let Err(e) = std::fs::rename(&new, &app) {
+        let _ = std::fs::rename(&old, &app); // roll back
+        return Err(format!("Can't replace {} ({e})", app.display()));
     }
     Ok(())
 }
@@ -351,6 +491,11 @@ pub fn spawn(app: AppHandle) {
 
 /// Remove what the last update left behind.
 pub fn cleanup() {
+    #[cfg(target_os = "macos")]
+    if let Some(app) = bundle() {
+        let _ = std::fs::remove_dir_all(side(&app, ".old"));
+        let _ = std::fs::remove_dir_all(side(&app, ".new"));
+    }
     if let Some(me) = exe() {
         let _ = std::fs::remove_file(side(&me, ".old"));
         let _ = std::fs::remove_file(side(&me, ".new"));
@@ -383,6 +528,14 @@ pub fn wait_for_previous() {
     let args: Vec<String> = std::env::args().collect();
     let Some(i) = args.iter().position(|a| a == "--wait-pid") else { return };
     let Some(pid) = args.get(i + 1).and_then(|p| p.parse::<u32>().ok()) else { return };
+    #[cfg(not(windows))]
+    {
+        let t0 = std::time::Instant::now();
+        while t0.elapsed() < Duration::from_secs(10) && unsafe { libc::kill(pid as libc::pid_t, 0) } == 0 {
+            std::thread::sleep(Duration::from_millis(100));
+        }
+    }
+    #[cfg(windows)]
     unsafe {
         use windows::Win32::Foundation::CloseHandle;
         use windows::Win32::System::Threading::{OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE};

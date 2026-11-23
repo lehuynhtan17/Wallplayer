@@ -896,6 +896,34 @@ const listen = (e, f) => T ? T.event.listen(e, f) : null;
 const $ = s => document.querySelector(s);
 const app = $('#app');
 
+/* ════════════════════ system ════════════════════ */
+// Which system the app runs on (Wallplayer says so before the page loads; a browser preview counts
+// as Windows). On Linux / macOS the texts that name Windows get this system's words instead.
+const OS = window.__WP_OS__ || 'windows';
+const OSW = OS === 'windows' ? null : (() => {
+  const mac = OS === 'macos';
+  return [
+    [/Start with Windows/g, mac ? 'Open at login' : 'Start at login'],
+    [/Mở cùng Windows/g, 'Mở khi đăng nhập'],
+    [/Wallplayer opens when Windows starts/g, 'Wallplayer opens when you log in'],
+    [/Wallplayer no longer opens with Windows/g, 'Wallplayer no longer opens at login'],
+    [/tự mở cùng Windows/g, 'tự mở khi đăng nhập'],
+    [/Windows volume/g, 'System volume'],
+    [/Âm lượng Windows/g, 'Âm lượng hệ thống'],
+    [/(Your|your|the|The) Windows wallpaper/g, '$1 desktop wallpaper'],
+    [/the Windows app/g, 'the desktop app'],
+    [/app Windows/g, 'app máy tính'],
+    [/the Windows taskbar/g, mac ? 'the Dock' : 'the panel'],
+    ...(mac ? [[/Ctrl\+Alt\+Space/g, '⇧⌘Space'], [/Ctrl Alt Space/g, '⇧ ⌘ Space']] : []),
+    [/\bWindows\b/g, mac ? 'macOS' : 'Linux'],
+  ];
+})();
+const osWords = t => {
+  if (!OSW || !t || (t.indexOf('Windows') < 0 && !(OS === 'macos' && t.indexOf('Ctrl') >= 0))) return t;
+  for (const [re, rp] of OSW) t = t.replace(re, rp);
+  return t;
+};
+
 /* ════════════════════ interface language ════════════════════ */
 // English in the code; Vietnamese is swapped in as texts appear (i18n-vi.js). Songs, artists,
 // lyrics and results stay as they are. Default: Vietnamese when Windows is in Vietnamese.
@@ -904,12 +932,13 @@ const I18N = (() => {
   const lang = saved || (/^vi\b/i.test(navigator.language || '') ? 'vi' : 'en');
   const V = window.WP_VI || {dict: {}, patterns: []};
   const NOTR = '#qlist .qm,#flow,#lyrics2,#npTitle,#npSub,#rTop,#rSongs,#rEnt,#rCols,#rSug,#rFeed .rrow,#clock,.upNotes,#lyrList .lv,#mvPick .tip,.bgv,#flowLabel,svg,script,style,textarea,.selftest';
-  const tr = t => {
+  const tr0 = t => {
     if (lang !== 'vi' || !t) return t; const k = t.trim(); if (!k) return t;
     const v = V.dict[k]; if (v != null) return t.replace(k, v);
     for (const [re, rp] of V.patterns){ const m = k.match(re); if (m) return t.replace(k, typeof rp === 'function' ? rp(m, tr) : k.replace(re, rp)) }
     return t;
   };
+  const tr = t => osWords(tr0(t));
   const skip = el => !el || (el.closest && el.closest(NOTR));
   const ATTRS = ['title', 'placeholder', 'aria-label'];
   const doText = n => { if (skip(n.parentElement)) return; const v = tr(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v };
@@ -920,8 +949,8 @@ const I18N = (() => {
     root.querySelectorAll('[title],[placeholder],[aria-label]').forEach(el => { for (const a of ATTRS) if (el.hasAttribute(a)) doAttr(el, a) });
     const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) doText(n);
   };
-  if (lang === 'vi'){
-    document.documentElement.lang = 'vi';
+  if (lang === 'vi' || OSW){
+    if (lang === 'vi') document.documentElement.lang = 'vi';
     doTree(document.body);
     new MutationObserver(ms => { for (const m of ms){
       if (m.type === 'childList') m.addedNodes.forEach(doTree);
@@ -1595,7 +1624,7 @@ function renderAppPop(){
     body = grp('Power', col('Mode', chips('pwr', PWR), {auto: 'Lighter by itself on battery or with Energy Saver on.', full: 'Always full quality, even on battery.', saver: 'Always lighter: 30 fps, video up to 720p.'}[L.pwr || 'auto'])
         + row('Rest behind full-screen and maximised windows', tg(L.pcov !== false, 'data-t="pcov"'))
         + `<div class="sr"><span class="sl"><small id="pwrNow">${pwrNow()}</small></span></div>`)
-      + (T ? grp('Startup', row('High priority', tg(!!S.ui.autostart_high, 'data-sa="autohigh"'), 'Opens first when you sign in, before other apps, and loads at high priority')) : '');
+      + (T && OS === 'windows' ? grp('Startup', row('High priority', tg(!!S.ui.autostart_high, 'data-sa="autohigh"'), 'Opens first when you sign in, before other apps, and loads at high priority')) : '');
   } else if (tab === 'acc'){
     body = `<div id="accSlot"></div>`;
   } else {
@@ -3231,7 +3260,7 @@ $('#appPop').addEventListener('click', e => {
   const sa = e.target.closest('[data-sa]'); if (sa){ e.stopPropagation(); settingsAct(sa.dataset.sa); return }
   const ed = e.target.closest('[data-edit]'); if (ed){ e.stopPropagation(); closeMenus(); openEditor(ed.dataset.edit); return }
   if (e.target.closest('#bindBtn')){ e.stopPropagation(); S.binding ? stopBinding() : startBinding(); return }
-  if (e.target.closest('#bindReset')){ e.stopPropagation(); stopBinding(); applySearchKey('Ctrl+Alt+Space'); return }
+  if (e.target.closest('#bindReset')){ e.stopPropagation(); stopBinding(); applySearchKey(window.__WP_DEFAULT_KEY__ || 'Ctrl+Alt+Space'); return }
   if (e.target.closest('#upCheck')){ e.stopPropagation(); closeMenus(); openUpdates(); return }
   const lg = e.target.closest('[data-lang]');
   if (lg){ e.stopPropagation(); if (lg.dataset.lang === I18N.lang) return; S.look.lang = lg.dataset.lang; store.set('look', S.look);
@@ -3620,7 +3649,8 @@ $('#lyrics2').addEventListener('click', e => { if (!app.classList.contains('edit
 $('#clock').addEventListener('dblclick', e => e.stopPropagation());
 /* "Search from anywhere": one rebindable key / mouse button (default Ctrl Alt Space) */
 S.searchKey = 'Ctrl+Alt+Space'; S.binding = false;
-const keyLabel = k => (k || '').replace(/Mouse:Middle/, 'Middle click').replace(/Mouse:X1/, 'Mouse back button').replace(/Mouse:X2/, 'Mouse forward button').replace(/\+/g, ' + ').replace(/Super/, 'Win').replace(/\bKey([A-Z])\b/, '$1').replace(/\bDigit(\d)\b/, '$1');
+const keyLabel = k => (k || '').replace(/Mouse:Middle/, 'Middle click').replace(/Mouse:X1/, 'Mouse back button').replace(/Mouse:X2/, 'Mouse forward button').replace(/\+/g, ' + ').replace(/Super/, OS === 'macos' ? '⌘' : OS === 'linux' ? 'Super' : 'Win').replace(/\bKey([A-Z])\b/, '$1').replace(/\bDigit(\d)\b/, '$1')
+  .replace(OS === 'macos' ? /\b(Ctrl|Alt|Shift)\b/g : /(?!)/, m => ({Ctrl: '⌃', Alt: '⌥', Shift: '⇧'})[m] || m);
 async function applySearchKey(spec){
   try { S.searchKey = await invoke('set_search_key', {spec}); toast('Search from anywhere: ' + keyLabel(S.searchKey)) }
   catch(err){ toast("Can't use that one — try another") }

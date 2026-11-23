@@ -1,21 +1,49 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod accounts;
+// Windows: the files next to this one. Linux / macOS: the same modules (same functions) in `unix/`.
+#[cfg_attr(not(windows), path = "unix/audio.rs")]
 mod audio;
+#[cfg_attr(not(windows), path = "unix/boot.rs")]
 mod boot;
+#[cfg_attr(not(windows), path = "unix/deskmouse.rs")]
 mod deskmouse;
+#[cfg_attr(not(windows), path = "unix/desktop.rs")]
 mod desktop;
 mod guard;
 mod island;
 mod library;
+#[cfg_attr(not(windows), path = "unix/media.rs")]
 mod media;
 mod mirror;
 mod net;
+#[cfg_attr(not(windows), path = "unix/power.rs")]
 mod power;
 mod settings;
 mod tiktok;
 mod update;
+#[cfg_attr(not(windows), path = "unix/volume.rs")]
 mod volume;
+#[cfg(target_os = "linux")]
+#[path = "unix/x11.rs"]
+mod x11;
+#[cfg(target_os = "macos")]
+#[path = "unix/mac.rs"]
+mod mac;
+
+/// The native handle of one of our windows as a number: the HWND on Windows; on Linux / macOS a
+/// small id the `desktop` module hands out (and turns back into the window).
+#[cfg(windows)]
+pub(crate) fn raw_of(w: &tauri::WebviewWindow) -> isize {
+    w.hwnd().map(|h| h.0 as isize).unwrap_or(0)
+}
+#[cfg(not(windows))]
+pub(crate) fn raw_of(w: &tauri::WebviewWindow) -> isize {
+    desktop::raw_of(w)
+}
+
+/// Which system this build runs on, as the interface names it.
+pub(crate) const OS: &str = if cfg!(windows) { "windows" } else if cfg!(target_os = "macos") { "macos" } else { "linux" };
 
 use std::sync::Mutex;
 
@@ -189,7 +217,10 @@ struct Wallpaper {
 /// The Windows wallpaper of the monitor the calling window is on.
 #[tauri::command]
 async fn desktop_wallpaper(window: tauri::WebviewWindow, known: Option<String>) -> Result<Option<Wallpaper>, String> {
-    let raw = window.hwnd().map(|h| h.0 as isize).map_err(|e| e.to_string())?;
+    let raw = raw_of(&window);
+    if raw == 0 {
+        return Err("no window handle".into());
+    }
     tauri::async_runtime::spawn_blocking(move || {
         let Some(path) = desktop::wallpaper_for(raw) else { return Ok(None) };
         if known.as_deref() == Some(path.as_str()) {
@@ -199,6 +230,8 @@ async fn desktop_wallpaper(window: tauri::WebviewWindow, known: Option<String>) 
         let ext = path.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
         let mime = match ext.as_str() {
             "png" => "image/png",
+            "heic" | "heif" => "image/heic",
+            "svg" => "image/svg+xml",
             "bmp" | "dib" => "image/bmp",
             "gif" => "image/gif",
             "webp" => "image/webp",
@@ -554,6 +587,19 @@ pub(crate) static UI_VI: std::sync::atomic::AtomicBool = std::sync::atomic::Atom
 
 pub(crate) fn tray_label(id: &str) -> String {
     let vi = UI_VI.load(std::sync::atomic::Ordering::Relaxed);
+    #[cfg(not(windows))]
+    {
+        // the shortcut shown is this system's default one; "Start with …" names this system
+        let key = settings::default_key_label();
+        let at_login = if cfg!(target_os = "macos") { ("Open at login", "Mở khi đăng nhập") } else { ("Start at login", "Mở khi đăng nhập") };
+        match (id, vi) {
+            ("search", false) => return format!("Search music   {key}"),
+            ("search", true) => return format!("Tìm nhạc   {key}"),
+            ("autostart", false) => return at_login.0.to_string(),
+            ("autostart", true) => return at_login.1.to_string(),
+            _ => {}
+        }
+    }
     match (id, vi) {
         ("search", false) => "Search music   Ctrl+Alt+Space",
         ("search", true) => "Tìm nhạc   Ctrl+Alt+Space",
@@ -748,6 +794,15 @@ fn main() {
     desktop::set_app_id();
 
     tauri::Builder::default()
+        // tells the interface which system it runs on (names, the default shortcut) before it starts
+        .plugin(
+            tauri::plugin::Builder::<tauri::Wry>::new("wp-os")
+                .js_init_script(format!(
+                    "window.__WP_OS__ = '{OS}'; window.__WP_DEFAULT_KEY__ = '{}';",
+                    settings::default_search_key()
+                ))
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -852,7 +907,9 @@ fn main() {
 
             // window → desktop layer
             let win = app.get_webview_window("main").expect("main window");
-            let raw = win.hwnd().map(|h| h.0 as isize).unwrap_or(0);
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory); // a tray app: no Dock icon
+            let raw = raw_of(&win);
             *app.state::<AppState>().hwnd.lock().unwrap() = raw;
             if raw != 0 {
                 desktop::install(raw);
@@ -923,12 +980,12 @@ fn main() {
             });
 
             // tray
-            let search_i = MenuItem::with_id(app, "search", "Search music   Ctrl+Alt+Space", true, None::<&str>)?;
+            let search_i = MenuItem::with_id(app, "search", tray_label("search"), true, None::<&str>)?;
             let wall_i = CheckMenuItem::with_id(app, "wallpaper", "Behind desktop icons", true, wall_on, None::<&str>)?;
             let auto_i = CheckMenuItem::with_id(
                 app,
                 "autostart",
-                "Start with Windows",
+                tray_label("autostart"),
                 true,
                 settings::autostart_enabled(),
                 None::<&str>,
@@ -941,7 +998,11 @@ fn main() {
             let update_i = MenuItem::with_id(app, "update", format!("Check for updates   (v{})", update::current()), true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit Wallplayer", true, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
+            // Linux: the skin always covers the file manager's desktop icons, so that switch has no use there
+            #[cfg(not(target_os = "linux"))]
             let menu = Menu::with_items(app, &[&search_i, &wall_i, &icons_i, &display_i, &mirror_i, &auto_i, &sep, &update_i, &reload_i, &quit_i])?;
+            #[cfg(target_os = "linux")]
+            let menu = Menu::with_items(app, &[&search_i, &wall_i, &display_i, &mirror_i, &auto_i, &sep, &update_i, &reload_i, &quit_i])?;
             let mirror_c = mirror_i.clone();
             *app.state::<AppState>().wall_item.lock().unwrap() = Some(wall_i.clone());
             *app.state::<AppState>().auto_item.lock().unwrap() = Some(auto_i.clone());
