@@ -2,6 +2,7 @@
 //   mac-windows <pid>      the windows on screen, front to back ("MINE" = Wallplayer's), with the
 //                          desktop / desktop icon / floating window levels to compare with
 //   mac-windows click X Y  one left click at X, Y (points, top-left origin)
+//   mac-windows move X Y   move the mouse there
 import CoreGraphics
 import Foundation
 
@@ -14,6 +15,11 @@ if args.count >= 4 && args[1] == "click", let x = Double(args[2]), let y = Doubl
     CGEvent(mouseEventSource: src, mouseType: .leftMouseDown, mouseCursorPosition: p, mouseButton: .left)?.post(tap: .cghidEventTap)
     usleep(90_000)
     CGEvent(mouseEventSource: src, mouseType: .leftMouseUp, mouseCursorPosition: p, mouseButton: .left)?.post(tap: .cghidEventTap)
+    exit(0)
+}
+
+if args.count >= 4 && args[1] == "move", let x = Double(args[2]), let y = Double(args[3]) {
+    CGEvent(mouseEventSource: CGEventSource(stateID: .hidSystemState), mouseType: .mouseMoved, mouseCursorPosition: CGPoint(x: x, y: y), mouseButton: .left)?.post(tap: .cghidEventTap)
     exit(0)
 }
 

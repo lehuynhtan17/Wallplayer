@@ -80,6 +80,7 @@ cap "4. Ctrl+Alt+Space: the skin comes above every app; type to search"
 t xdotool key ctrl+alt+space
 for i in $(seq 1 20); do t xprop -id $W _NET_WM_STATE | grep -q ABOVE && break; sleep 0.3; done
 check "Ctrl+Alt+Space raises the skin" 't xprop -id $W _NET_WM_STATE | grep -q ABOVE'
+{ echo "  skin: $(t xprop -id $W _NET_WM_WINDOW_TYPE _NET_WM_STATE | tr '\n' ' ')"; echo "  active: $(t xprop -root _NET_ACTIVE_WINDOW)"; } >> "$OUT/checks.txt"
 t xdotool type --delay 110 "nang tho hoang dung"; sleep 3
 
 cap "5. Switch to another app: the skin goes back to the wallpaper layer"
@@ -129,7 +130,7 @@ cap "13. Search and play a song from YouTube Music (real internet)"
 pkill -f fake_mpris; sleep 1
 t xdotool key ctrl+alt+space; sleep 2
 t xdotool key ctrl+a; t xdotool type --delay 90 "nang tho hoang dung"; sleep 7
-t xdotool key Return; sleep 14
+click 672 465; sleep 14
 check "app still running at the end" 'pgrep -x wallplayer'
 
 cap "End: Wallplayer on Linux"
@@ -137,5 +138,6 @@ sleep 3
 kill -INT $FF; wait $FF 2>/dev/null
 import -window root "$OUT/last-frame.png" 2>/dev/null
 pkill -x wallplayer; pkill -f fake_mpris; pkill -x xterm
+echo "--- app log ---"; tail -25 "$OUT/app.log"
 echo; cat "$OUT/checks.txt"
 exit $FAIL

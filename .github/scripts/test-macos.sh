@@ -59,8 +59,9 @@ check "Shift+Command+Space raises the skin above the apps" '[ "$(level 3-search)
 key 'keystroke "nang tho hoang dung"'; sleep 7
 shot 3-search
 
-cap "4. Enter: play the top result from YouTube Music (real internet)"
-key 'key code 36'; sleep 15
+cap "4. Click the first top result: it plays from YouTube Music (real internet)"
+W=${D%x*}; H=${D#*x}
+/tmp/macwins click $(( W * 328 / 1000 )) $(( H * 483 / 1000 )); sleep 15
 shot 4-playing
 
 cap "5. Self-test (Ctrl+Shift+D): volume, desktop, YouTube"
@@ -73,10 +74,11 @@ wins 6-back; shot 6-back
 check "skin back just above the desktop icons" '[ "$(level 6-back)" = "$(( $(lvl 6-back desktopIcon) + 1 ))" ]'
 osascript -e 'quit app "Calculator"' 2>> "$OUT/osascript.log"; sleep 2
 
-cap "7. One click on the skin while Finder is in front: the volume slider opens"
-W=${D%x*}; H=${D#*x}
-/tmp/macwins click $(( W * 660 / 1000 )) $(( H * 797 / 1000 )); sleep 3
+cap "7. Point at the volume icon: the slider; one click (Finder in front): mute"
+/tmp/macwins move $(( W * 681 / 1000 )) $(( H * 779 / 1000 )); sleep 3
 shot 7-volume
+/tmp/macwins click $(( W * 681 / 1000 )) $(( H * 779 / 1000 )); sleep 3
+shot 7-muted
 osascript -e 'set volume output volume 30' 2>> "$OUT/osascript.log"; sleep 3
 
 cap "8. Mission Control: the skin stays on the desktop"
