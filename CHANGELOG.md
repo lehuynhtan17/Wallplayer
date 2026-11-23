@@ -5,6 +5,12 @@ the section that matches the version in `src-tauri/Cargo.toml`.
 
 ## 1.0.16
 
+### New
+- Linux and macOS preview builds. Each release now has one zip per system: `Wallplayer-Windows-x64.zip`, `Wallplayer-Linux-x64.zip` and `Wallplayer-macOS.zip`. The Linux and macOS builds have been tested on GitHub's Linux and Mac machines but not yet on real PCs or Macs; "Linux and macOS" in GUIDE.txt lists what differs from Windows.
+  - Linux (64-bit): Wallplayer becomes the desktop (on Wayland through XWayland), music playing in other apps comes in through MPRIS, and the system volume and ambient light go through PipeWire / PulseAudio. Needs WebKitGTK 4.1 (Ubuntu 22.04 or newer).
+  - macOS (Apple silicon and Intel): Wallplayer sits on the desktop of every Space, Spotify and Apple Music show in the player, and the search shortcut is ⇧⌘Space. The app is not notarized by Apple: the first time, right-click it → Open.
+- Nothing changes on Windows apart from the fix below.
+
 ### Fixed
 - The music video wallpaper could run up to 2.5 seconds ahead of or behind the song. It is now kept within about a tenth of a second (half a second for Spotify and other apps, which report their position less precisely): small drift is caught up by playing the video slightly faster or slower, without a visible jump, and a big gap is jumped over. Videos on the other displays follow the main one the same way.
 
