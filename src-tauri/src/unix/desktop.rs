@@ -286,6 +286,19 @@ pub fn install(raw: isize) {
                 }
                 false
             });
+            // a mode change hides the window and shows it again (the window manager reads the type
+            // only then); the window manager may clear the old window's states (above the others,
+            // on every workspace) after we set the new ones: set them once more when it is on screen
+            gw.connect_map_event(move |gw, _| {
+                let mode = if is_mirror(raw) && current_mode() == Mode::Peek { Mode::Desktop } else { current_mode() };
+                gw.set_keep_above(mode == Mode::Peek);
+                gw.set_keep_below(mode == Mode::Desktop);
+                gw.stick();
+                if mode == Mode::Peek {
+                    gw.present();
+                }
+                glib::Propagation::Proceed
+            });
         }
     }
     #[cfg(target_os = "macos")]

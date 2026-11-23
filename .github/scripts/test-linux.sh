@@ -44,6 +44,20 @@ sleep 2
 
 move() { eval "$(xdotool getmouselocation --shell)"; for i in $(seq 1 14); do t xdotool mousemove $((X + ($1 - X) * i / 14)) $((Y + ($2 - Y) * i / 14)); sleep 0.03; done; }
 click() { move "$1" "$2"; sleep 0.25; t xdotool click 1; }
+# the player bar moves down a little when the row of dots above it appears (a music video of the song
+# was found, which takes a moment): find the play / pause button and click relative to where it is now
+dock_dy() {
+  import -window root -crop 24x150+688+790 -colorspace gray -depth 8 gray:- 2>/dev/null | python3 -c '
+import sys
+d = sys.stdin.buffer.read(); w = 24
+rows = [y for y in range(len(d) // w) if max(d[y * w:(y + 1) * w]) > 190]
+cl = []
+for r in rows:
+    if cl and r - cl[-1][1] <= 2: cl[-1][1] = r
+    else: cl.append([r, r])
+cl = [c for c in cl if c[1] - c[0] >= 6]
+print(round(790 + (cl[-1][0] + cl[-1][1]) / 2 - 861) if cl else 0)'
+}
 skin() { for w in $(t xprop -root _NET_CLIENT_LIST | grep -o '0x[0-9a-f]*'); do t xprop -id $w WM_CLASS | grep -qi wallplayer && { echo $w; return; }; done; }
 
 # ---------- recording ----------
@@ -93,19 +107,20 @@ check "skin back in the desktop layer" 't xprop -id $W _NET_WM_WINDOW_TYPE | gre
 
 cap "6. Music playing in another app (MPRIS, like Spotify) shows in the player"
 python3 "$HERE/fake_mpris.py" > /dev/null 2>&1 &
-sleep 5
+sleep 8
 
 cap "7. Pause / Next in Wallplayer control that app"
-click 700 848; sleep 2.5
-click 745 848; sleep 3
+DY=$(dock_dy); echo "  player bar offset: ${DY}px" >> "$OUT/checks.txt"
+click 700 $((861 + DY)); sleep 2.5
+DY=$(dock_dy); click 745 $((861 + DY)); sleep 3
 check "Pause / Next reached the other app" 'grep -q PlayPause /tmp/fake_mpris.log && grep -q Next /tmp/fake_mpris.log'
-click 700 848; sleep 2.5
+DY=$(dock_dy); click 700 $((861 + DY)); sleep 2.5
 
 cap "8. System volume: click for the slider, click to change it"
-click 1268 861; sleep 2
-click 1150 788; sleep 1.5
-check "volume slider changed the system volume" 'pactl get-sink-volume speaker | grep -qv " 70%"'
-click 1210 788; sleep 1.5
+DY=$(dock_dy); click 1268 $((861 + DY)); sleep 2
+click 1150 $((788 + DY)); sleep 1.5
+check "volume slider changed the system volume" 'pactl get-sink-volume speaker | head -1 | grep -qv " 70%"'
+click 1210 $((788 + DY)); sleep 1.5
 t xdotool key Escape; move 1500 500; sleep 1
 
 cap "9. The edge light follows the system sound (with sound)"
