@@ -2020,6 +2020,7 @@ function loadYTApi(){
     const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = () => res(false); document.head.appendChild(s); setTimeout(() => res(!!(window.YT && YT.Player)), 9000) });
   return ytApi;
 }
+const MVD = {rate: 1, jumpAt: 0};   // music-video drift control (mvDrift)
 function makeYT(hostId, audio){
   return {
     p: null, ready: null, ids: [], i: 0, start: 0, seq: 0,
@@ -2030,7 +2031,7 @@ function makeYT(hostId, audio){
     async load(ids, start = 0){ const seq = ++this.seq; this.ids = (ids || []).filter(Boolean); this.i = 0; this.start = start;
       if (!this.ids.length) return this.fail(); const ok = await this.ensure(); if (seq !== this.seq) return; if (!ok) return this.fail(); this.cue() },
     cue(){ const id = this.ids[this.i]; if (!id) return this.fail();
-      try { this.p.loadVideoById({videoId: id, startSeconds: Math.max(0, this.start || 0)}); if (audio) this.vol(); else this.p.mute() } catch(e){ this.fail() } },
+      try { this.p.loadVideoById({videoId: id, startSeconds: Math.max(0, this.start || 0)}); if (audio) this.vol(); else { this.p.mute(); this.p.setPlaybackRate(1); MVD.rate = 1 } } catch(e){ this.fail() } },
     err(){ this.i++; if (this.i < Math.min(this.ids.length, 7)) this.cue(); else this.fail() },
     fail(){ if (audio){ if (S.src === 'yt'){ S.src = 'none'; renderPlay(); toast("Can't stream that one — try another platform") } } else { $('#ytWrap').classList.remove('on'); app.classList.remove('mv') } },
     state(s){
@@ -2619,13 +2620,29 @@ function mvSync(){
   if (MIRROR){   // follow the main window's video, whatever it is
     const want = MS.vt + (MS.vpl ? (performance.now() - MS.at) / 1000 : 0);
     if (!MS.vpl && YTV.playing()) YTV.pause(); if (MS.vpl && !YTV.playing()) YTV.play();
-    if (Math.abs(YTV.time() - want) > 2.5 && YTV.dur() > want) YTV.seek(want); return;
+    return;   // mvDrift keeps it in time
   }
   if (bgVid() || S.mvPick){ if (!YTV.playing()) YTV.play(); return }   // background video / another video of the artist keeps running, not tied to the song
   if (!(S.src === 'system' || S.src === 'yt' || S.src === 'sc')) return;
   const pl = isPlaying(); if (!pl && YTV.playing()) YTV.pause(); if (pl && !YTV.playing()) YTV.play();
-  const pos = getPos(); if (Math.abs(YTV.time() - pos) > 2.5 && YTV.dur() > pos) YTV.seek(pos);
 }
+
+// Keep the music video in time with what you hear (it is a separate, muted player). Small drift: play the
+// video a little faster or slower until it catches up (no visible jump); a big gap (just loaded, skipped
+// ahead): jump, landing a little ahead because a jump takes about a quarter second.
+function mvRate(r){ if (MVD.rate === r) return; MVD.rate = r; try { YTV.p.setPlaybackRate(r) } catch(e){} }
+function mvDrift(){
+  if (!YTV.p || !$('#ytWrap').classList.contains('on') || !YTV.playing()) return;
+  let want;
+  if (MIRROR) want = MS.vpl ? MS.vt + (performance.now() - MS.at) / 1000 : null;
+  else if (!bgVid() && !S.mvPick && !app.classList.contains('clip') && (S.src === 'system' || S.src === 'yt' || S.src === 'sc' || S.src === 'local') && isPlaying()) want = getPos();
+  if (want == null || !(YTV.dur() > want)){ mvRate(1); return }
+  const d = YTV.time() - want, a = Math.abs(d);   // + = the video is ahead of the sound
+  const tight = S.src === 'system' && !MIRROR ? .45 : .12;   // apps like Spotify report their position less precisely
+  if (a > 1.5){ if (performance.now() - MVD.jumpAt > 2500){ MVD.jumpAt = performance.now(); mvRate(1); YTV.seek(want + .25) } return }
+  if (a > tight) mvRate(d < 0 ? 1.25 : .75); else if (a < tight / 3) mvRate(1);
+}
+setInterval(mvDrift, 250);
 
 /* ════════════════════ playlist (left) ════════════════════ */
 const queueList = () => S.qKind === 'history' || !S.queue.length ? S.history : S.queue;

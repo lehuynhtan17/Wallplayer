@@ -155,6 +155,8 @@ VIỀN SÁNG, ICON KHAY, MV
   các góc, và "Light on each display" bật tắt viền sáng riêng từng màn hình.
 - Icon khay đổi thành ảnh bìa bài đang phát với vòng tròn đập theo nhạc (Cài đặt → Bố cục → "Album cover as the tray icon").
 - Khi MV đang làm hình nền: các chấm nhỏ phía trên ô tìm kiếm = MV của bài và MV khác của cùng ca sĩ, bấm để đổi.
+  App tự giữ MV khớp với tiếng. Nếu miệng ca sĩ vẫn lệch lời thì MV đó là bản dựng khác của bài (intro dài hơn,
+  có đoạn phim, bản cắt ngắn): bấm chấm khác, hoặc phát thẳng video YouTube của bài (hình và tiếng cùng một video).
 - Nhạc phát ở 2 nơi cùng lúc (Wallplayer và Spotify / trình duyệt): cả hai cứ phát, Wallplayer không tự dừng bên nào.
   Khi bài trong Wallplayer đã tạm dừng quá 1 phút mà app khác đang phát, trình phát chuyển sang hiện bài của app đó;
   bấm một bài trong playlist để quay lại.

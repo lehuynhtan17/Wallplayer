@@ -121,6 +121,9 @@ Esc or a click outside closes it.
 - Wallpaper:
   · Music video / cover: the music video of the song, kept in time; the album cover when there is none.
     Dots above the search field let you pick the song's own video or another video by the same artist.
+    The video is kept in time with the sound. If the singing still doesn't match, that video is a different
+    cut of the song (a longer intro, a story part, a radio edit): pick another dot, or play the song's
+    YouTube video itself (then the picture and the sound come from the same video).
   · My video: search YouTube for any video; it plays muted and loops behind everything.
   · Surprise me: city, nature and first-person walk videos picked to fit your songs; "New video each
     song", or "Another one" to change now.

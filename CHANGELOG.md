@@ -3,6 +3,11 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.16
+
+### Fixed
+- The music video wallpaper could run up to 2.5 seconds ahead of or behind the song. It is now kept within about a tenth of a second (half a second for Spotify and other apps, which report their position less precisely): small drift is caught up by playing the video slightly faster or slower, without a visible jump, and a big gap is jumped over. Videos on the other displays follow the main one the same way.
+
 ## 1.0.15
 
 ### Changed
