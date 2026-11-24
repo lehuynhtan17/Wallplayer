@@ -3,6 +3,17 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.20
+
+### New
+- TikTok: Following and Friends next to For You (sign in to TikTok first).
+- TikTok profiles: click the author's picture or name beside the video to open their profile: picture, name, following / followers / likes, bio and their videos. Click one of their videos to watch theirs from that one; For You (or the tab you came from) takes you back to the video you left. On a portrait display the profile rises over the lower part of the video.
+
+### Changed
+- TikTok videos start much sooner after a swipe. While you watch, the next two videos load out of sight one at a time and silently buffer their first moments; the video you just watched stays ready for going back; a video TikTok can't play is skipped before you reach it. Power saving loads only the next one.
+- TikTok For You opens at once on the videos you had not reached last time, while TikTok sends new ones, and the first new videos are picked up sooner.
+- Self-test shows how fast TikTok videos start on your PC.
+
 ## 1.0.19
 
 ### Fixed

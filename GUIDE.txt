@@ -177,6 +177,18 @@ TIKTOK
   TikTok's general feed when you are not. Type in the search field and press Enter to watch a search;
   the For You button brings the feed back. "Up next" on the right shows the next three videos;
   "See more" under a long caption shows all of it.
+- Following and Friends, next to For You: videos from the accounts you follow and from your friends
+  (sign in to TikTok first).
+- Profiles: click the author's picture or name beside the video. Their profile opens in place of "Up
+  next" (on a portrait screen it rises over the lower part of the video): picture, name, following,
+  followers, likes, bio and their videos. Click one of their videos to watch theirs from that one; the
+  "@name" button opens the profile again, and For You (or the tab you came from) takes you back to the
+  video you left. ✕ closes the profile.
+- Loading: while you watch, the next two videos load out of sight (one at a time) and their first moments
+  download silently, so a swipe starts the next video at once; the one you just watched stays ready for
+  going back, and a video TikTok can't play is skipped. For You opens at once on the videos you had not
+  reached last time, while TikTok sends new ones. Settings → General → Self-test shows how fast TikTok
+  videos start on your PC. Power saving loads only the next video.
 - How it works: TikTok has no public feed for apps, so Wallplayer opens TikTok's own page out of sight
   (with your TikTok session) to read the list of videos, and plays each video in TikTok's official embed
   player. If TikTok asks for a check, press "Open TikTok", answer it, then "Done".
@@ -267,6 +279,8 @@ What differs from Windows:
   Music show in the player (macOS asks once whether Wallplayer may control them). The search shortcut is ⇧⌘Space, because
   macOS uses ⌃⌥Space to switch the keyboard language. The ambient light follows its own animation:
   macOS does not let apps hear the system sound without the Screen Recording permission.
+- TikTok (Following, Friends, profiles, loading ahead) works the same; on Linux and macOS the hidden
+  TikTok pages also load their pictures (Windows skips them to save the connection).
 - Not on Linux / macOS: "High priority" (a Windows feature).
 
 KNOWN LIMITS

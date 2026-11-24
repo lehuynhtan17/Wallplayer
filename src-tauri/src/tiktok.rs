@@ -29,6 +29,8 @@ use windows::Win32::UI::WindowsAndMessaging::{GetWindowLongPtrW, SetWindowLongPt
 const LABEL: &str = "tiktok-feed";
 /// A second off-screen TikTok page, on the video you act on (like, save, comments).
 const ACT: &str = "tiktok-act";
+/// A third one, on the profile you open (its details and its videos).
+const USER: &str = "tiktok-user";
 const OFF: f64 = -32000.0;
 /// The hidden pages load no videos or pictures (only TikTok's lists), so the video you watch gets the
 /// whole connection; off while a page is on screen for TikTok's check (its puzzle is a picture).
@@ -70,10 +72,27 @@ pub struct Comment {
     pub avatar: String,
 }
 
+/// A TikTok account, as its profile shows it.
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct Profile {
+    pub name: String,
+    pub nick: String,
+    pub avatar: String,
+    pub bio: String,
+    pub verified: bool,
+    pub private: bool,
+    pub following: f64,
+    pub followers: f64,
+    pub likes: f64,
+    pub videos: f64,
+}
+
 /// What the page collected since the last call.
 #[derive(Serialize, Default)]
 pub struct Take {
     pub clips: Vec<Clip>,
+    /// on a profile page: that account
+    pub user: Option<Profile>,
     /// TikTok says there are more videos to load
     pub more: bool,
     /// TikTok shows a "verify you are human" check in the page
@@ -86,8 +105,20 @@ pub struct Take {
 /// Wallplayer take the list and ask for more (by scrolling the page).
 const HOOK: &str = r#"(() => {
   if (window.top !== window || !/(^|\.)tiktok\.com$/.test(location.hostname) || window.__wptt) return;
-  const Q = [], seen = new Set(), C = []; let more = true, res = null;
-  const WANT = /\/api\/(recommend\/item_list|search\/(item|general)\/full|comment\/list|commit\/item\/digg|item\/collect)\//;
+  const Q = [], seen = new Set(), C = []; let more = true, res = null, prof = null;
+  // video lists of every page (For You, Following, Friends, a profile: …/item_list/; a search: …/full/), comments,
+  // like / save answers, a profile's details
+  const LIST = /\/api\/[\w\/-]*?(item_list|search\/(item|general)\/full)\//, OTHER = /\/api\/(comment\/list|commit\/item\/digg|item\/collect|user\/detail)\//;
+  const WANT = {test: u => LIST.test(u) || OTHER.test(u)};
+  // a profile page (/@name): its own videos only (not reposts or suggestions)
+  const who = () => { const m = location.pathname.match(/^\/@([\w.]+)\/?$/); return m ? m[1].toLowerCase() : '' };
+  const st = (s, s2, k) => +((s && s[k] != null ? s[k] : s2 && s2[k]) || 0) || 0;
+  const pu = i => { if (!i || !i.user || !i.user.uniqueId) return null; const u = i.user, s = i.stats, s2 = i.statsV2;
+    return {name: String(u.uniqueId), nick: String(u.nickname || ''), avatar: String(u.avatarLarger || u.avatarMedium || u.avatarThumb || ''), bio: String(u.signature || ''),
+      verified: !!u.verified, private: !!u.privateAccount, following: st(s, s2, 'followingCount'), followers: st(s, s2, 'followerCount'),
+      likes: st(s, s2, 'heartCount') || st(s, s2, 'heart'), videos: st(s, s2, 'videoCount')} };
+  const ssr = () => { try { const e = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__'); if (!e) return null;
+    const j = JSON.parse(e.textContent), d = j && j.__DEFAULT_SCOPE__ && j.__DEFAULT_SCOPE__['webapp.user-detail']; return pu(d && d.userInfo) } catch(e){ return null } };
   const num = (s, s2, k) => +((s && s[k] != null ? s[k] : s2 && s2[k]) || 0) || 0;
   const pick = it => {
     if (!it || !it.id || !it.video || it.isAd || it.imagePost || it.liveRoomInfo) return null;
@@ -108,9 +139,11 @@ const HOOK: &str = r#"(() => {
     if (!j || typeof j !== 'object') return;
     if (/comment\/list/.test(url)){ for (const c of j.comments || []) C.push(cm(c)); return }
     if (/commit\/item\/digg|item\/collect/.test(url)){ res = {ok: j.status_code === 0 || j.statusCode === 0}; return }
+    if (/user\/detail/.test(url)){ const p = pu(j.userInfo); if (p) prof = p; return }
     const raw = j.itemList || j.item_list || (Array.isArray(j.data) ? j.data.map(d => d && d.item).filter(Boolean) : []);
     if ('hasMore' in j) more = !!j.hasMore; else if ('has_more' in j) more = !!j.has_more;
-    for (const it of raw || []){ const c = pick(it); if (c && !seen.has(c.id)){ seen.add(c.id); Q.push(c) } }
+    const mine = who();
+    for (const it of raw || []){ const c = pick(it); if (c && !seen.has(c.id) && (!mine || c.author.toLowerCase() === mine)){ seen.add(c.id); Q.push(c) } }
   };
   try {
     const F = window.fetch;
@@ -130,7 +163,8 @@ const HOOK: &str = r#"(() => {
   Object.defineProperty(window, '__wptt', {enumerable: false, value: {
     take(){ const clips = Q.splice(0, Q.length);
       const captcha = [...document.querySelectorAll('[id*="captcha" i],[class*="captcha" i]')].some(e => e.offsetWidth > 150 && e.offsetHeight > 120);
-      return {clips, more, captcha, ready: document.readyState !== 'loading'} },
+      const me = who(); if (me && !(prof && prof.name.toLowerCase() === me)) prof = ssr() || prof;
+      return {clips, more, captcha, ready: document.readyState !== 'loading', user: me && prof && prof.name.toLowerCase() === me ? prof : null} },
     // the video page (second window): press its like / save / comments button
     find(kind, id){
       const sel = {like: '[data-e2e="like-icon"],[data-e2e="browse-like-icon"]', save: '[data-e2e="favorite-icon"],[data-e2e="browse-favorite-icon"],[data-e2e="undefined-icon"]',
@@ -160,11 +194,22 @@ const HOOK: &str = r#"(() => {
 
 fn url_for(mode: &str, query: &str) -> String {
     let q = query.trim();
-    if mode == "search" && !q.is_empty() {
-        format!("https://www.tiktok.com/search/video?q={}", urlencoding::encode(q))
-    } else {
-        "https://www.tiktok.com/foryou".to_string()
+    match mode {
+        "search" if !q.is_empty() => format!("https://www.tiktok.com/search/video?q={}", urlencoding::encode(q)),
+        "following" => "https://www.tiktok.com/following".to_string(),
+        "friends" => "https://www.tiktok.com/friends".to_string(),
+        _ => "https://www.tiktok.com/foryou".to_string(),
     }
+}
+
+/// A TikTok user name as TikTok allows it (letters, digits, "_" and ".").
+fn user_name(name: &str) -> Option<&str> {
+    let n = name.trim().trim_start_matches('@');
+    (!n.is_empty() && n.len() <= 32 && n.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.')).then_some(n)
+}
+
+fn label_of(page: Option<&str>) -> &'static str {
+    if page == Some("user") { USER } else { LABEL }
 }
 
 /// Answer the hidden page's video and picture requests with nothing (see QUIET).
@@ -214,14 +259,31 @@ fn tuck(w: &WebviewWindow) {
     }
 }
 
-/// Open For You (mode "foryou") or a search (mode "search") in the off-screen page.
+/// Open For You ("foryou"), Following ("following"), Friends ("friends") or a search ("search") in the
+/// off-screen page.
 pub fn feed(app: &AppHandle, mode: &str, query: &str) -> Result<(), String> {
-    let u = Url::parse(&url_for(mode, query)).map_err(|e| e.to_string())?;
-    if let Some(w) = app.get_webview_window(LABEL) {
+    page(app, LABEL, &url_for(mode, query))
+}
+
+/// Open someone's profile (its details and videos) in its own off-screen page; "" empties that page.
+pub fn user(app: &AppHandle, name: &str) -> Result<(), String> {
+    if name.trim().is_empty() {
+        if let (Some(w), Ok(u)) = (app.get_webview_window(USER), Url::parse("about:blank")) {
+            let _ = w.navigate(u);
+        }
+        return Ok(());
+    }
+    let n = user_name(name).ok_or("Not a TikTok user name")?;
+    page(app, USER, &format!("https://www.tiktok.com/@{n}"))
+}
+
+fn page(app: &AppHandle, label: &str, url: &str) -> Result<(), String> {
+    let u = Url::parse(url).map_err(|e| e.to_string())?;
+    if let Some(w) = app.get_webview_window(label) {
         return w.navigate(u).map_err(|e| e.to_string());
     }
-    let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::External(u))
-        .title("Wallplayer · TikTok")
+    let w = WebviewWindowBuilder::new(app, label, WebviewUrl::External(u))
+        .title(if label == USER { "Wallplayer · TikTok profile" } else { "Wallplayer · TikTok" })
         .inner_size(480.0, 860.0)
         .position(OFF, OFF)
         .decorations(false)
@@ -248,7 +310,7 @@ pub fn feed(app: &AppHandle, mode: &str, query: &str) -> Result<(), String> {
 
 /// Leaving the TikTok channel: empty the page (it stays, for next time).
 pub fn stop(app: &AppHandle) {
-    for label in [LABEL, ACT] {
+    for label in [LABEL, ACT, USER] {
         if let Some(w) = app.get_webview_window(label) {
             tuck(&w);
             if let Ok(u) = Url::parse("about:blank") {
@@ -259,17 +321,17 @@ pub fn stop(app: &AppHandle) {
     *ACT_ITEM.lock().unwrap_or_else(|e| e.into_inner()) = String::new();
 }
 
-/// Scroll the page so TikTok loads the next videos.
-pub fn more(app: &AppHandle) {
-    if let Some(w) = app.get_webview_window(LABEL) {
+/// Scroll the page ("user": the profile page) so TikTok loads the next videos.
+pub fn more(app: &AppHandle, page: Option<&str>) {
+    if let Some(w) = app.get_webview_window(label_of(page)) {
         let _ = w.eval("window.__wptt && window.__wptt.more()");
     }
 }
 
 /// Bring a TikTok page on screen so you can answer TikTok's check yourself ("video": the page of the
-/// video you act on; otherwise the feed page); `false` puts it away again.
-pub fn show(app: &AppHandle, on: bool, video: bool) {
-    let Some(w) = app.get_webview_window(if video { ACT } else { LABEL }) else { return };
+/// video you act on; "user": the profile page; otherwise the feed page); `false` puts it away again.
+pub fn show(app: &AppHandle, on: bool, page: &str) {
+    let Some(w) = app.get_webview_window(match page { "video" => ACT, "user" => USER, _ => LABEL }) else { return };
     if on {
         QUIET.store(false, Ordering::Relaxed);
         let _ = w.eval("location.reload()");
@@ -332,8 +394,24 @@ fn parse(res: &str) -> Take {
                 .collect()
         })
         .unwrap_or_default();
+    let user = v.get("user").filter(|u| u.is_object()).and_then(|u| {
+        let name = user_name(u.get("name")?.as_str()?)?.to_string();
+        Some(Profile {
+            name,
+            nick: text(u, "nick", 80),
+            avatar: https(u, "avatar"),
+            bio: text(u, "bio", 400),
+            verified: u.get("verified").and_then(|x| x.as_bool()).unwrap_or(false),
+            private: u.get("private").and_then(|x| x.as_bool()).unwrap_or(false),
+            following: num(u, "following"),
+            followers: num(u, "followers"),
+            likes: num(u, "likes"),
+            videos: num(u, "videos"),
+        })
+    });
     Take {
         clips,
+        user,
         more: v.get("more").and_then(|x| x.as_bool()).unwrap_or(true),
         captcha: v.get("captcha").and_then(|x| x.as_bool()).unwrap_or(false),
         ready: v.get("ready").and_then(|x| x.as_bool()).unwrap_or(false),
@@ -423,9 +501,9 @@ async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
     }
 }
 
-/// The videos the page collected since the last call.
-pub async fn take(app: &AppHandle) -> Result<Take, String> {
-    Ok(run(app, LABEL, "window.__wptt ? window.__wptt.take() : null").await.map(|r| parse(&r)).unwrap_or_default())
+/// The videos the page ("user": the profile page) collected since the last call.
+pub async fn take(app: &AppHandle, page: Option<&str>) -> Result<Take, String> {
+    Ok(run(app, label_of(page), "window.__wptt ? window.__wptt.take() : null").await.map(|r| parse(&r)).unwrap_or_default())
 }
 
 static ACT_ITEM: Mutex<String> = Mutex::new(String::new());

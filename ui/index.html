@@ -729,6 +729,10 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
   #app.tt:not(.mirror) #ttNextWrap{grid-area:next}
   #app.tt:not(.mirror) #ttCom{grid-area:com;height:100%}
   #app.tt:not(.mirror) #ttSide.com{grid-template-areas:"tabs tabs" "com com"}
+  #app.tt:not(.mirror) #ttProf{grid-area:prof;height:100%}
+  #app.tt:not(.mirror) #ttSide.prof{grid-template-areas:"tabs tabs" "prof prof";top:calc(var(--tt-top) + var(--tt-h) * .42);z-index:3}
+  #app.tt:not(.mirror) #ttSide.prof #ttProf{background:rgba(14,15,20,.72);backdrop-filter:blur(28px) saturate(1.3)}
+  #app.tt:not(.mirror) #ttSide.prof .tpG{grid-template-columns:repeat(auto-fill,minmax(10rem,1fr))}
   #app.tt:not(.mirror) .ttn{width:8.4rem}
   /* the clock, small, in the space above the video */
   #app.tt:not(.mirror) #clock{left:50%;top:3.5vh;transform:translate(-50%,-50%) scale(.3)}}
@@ -814,6 +818,33 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 #ttCom{display:none;flex:1;min-height:0;flex-direction:column;border-radius:1.8rem;background:rgba(14,15,20,.48);backdrop-filter:blur(22px) saturate(1.3);border:1px solid rgba(255,255,255,.08);overflow:hidden}
 #ttSide.com #ttNextWrap,#ttSide.com #ttInfo{display:none}
 #ttSide.com #ttCom{display:flex}
+/* someone's profile, in place of Up next and the video's details: who they are, then their videos */
+#ttProf{display:none;flex:1;min-height:0;flex-direction:column;border-radius:1.8rem;background:rgba(14,15,20,.48);backdrop-filter:blur(22px) saturate(1.3);border:1px solid rgba(255,255,255,.08);overflow:hidden}
+#ttSide.prof #ttNextWrap,#ttSide.prof #ttInfo,#ttSide.prof #ttCom{display:none}
+#ttSide.prof #ttProf{display:flex}
+#tpL{flex:1;min-height:0;overflow-y:auto;padding:.2rem 1.6rem 1.6rem 1.8rem;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.tpH{display:flex;align-items:center;gap:1.2rem;min-width:0}
+.tpH img,.tpH i{width:6.4rem;height:6.4rem;border-radius:50%;object-fit:cover;background:rgba(255,255,255,.12);flex:none}
+.tpH div{min-width:0}
+.tpH b{display:flex;align-items:center;gap:.5rem;font:800 1.6rem Inter,system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tpH b svg{width:1.5rem;height:1.5rem;flex:none}
+.tpH span{display:block;font:500 1.2rem Inter,system-ui,sans-serif;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tpS{display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;margin:1.4rem 0 1rem;font:500 1.2rem Inter,system-ui,sans-serif;opacity:.75}
+.tpS b{font-weight:800;color:#fff;opacity:1;margin-right:.35rem}
+.tpB{margin:0 0 1.2rem;font:500 1.25rem/1.45 Inter,system-ui,sans-serif;opacity:.88;white-space:pre-line;overflow-wrap:anywhere}
+.tpG{display:grid;grid-template-columns:repeat(auto-fill,minmax(8rem,1fr));gap:.5rem;margin-top:1.4rem}
+.tpv{position:relative;aspect-ratio:3/4;border-radius:.6rem;overflow:hidden;background:rgba(255,255,255,.08);padding:0;transition:opacity .2s}
+.tpv:hover{opacity:.82}
+.tpv.on{box-shadow:0 0 0 2px #fff}
+.tpv img{width:100%;height:100%;object-fit:cover;display:block}
+.tpv::after{content:'';position:absolute;inset:auto 0 0;height:45%;background:linear-gradient(transparent,rgba(0,0,0,.55));pointer-events:none}
+.tpv span{position:absolute;z-index:1;left:.5rem;bottom:.4rem;display:flex;align-items:center;gap:.3rem;font:700 1.05rem Inter,system-ui,sans-serif;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.tpv span svg{width:1.2rem;height:1.2rem;fill:#fff;stroke:none}
+.tpE{grid-column:1/-1;padding:2.4rem 0;text-align:center;font:500 1.25rem/1.5 Inter,system-ui,sans-serif;opacity:.65}
+.tpE .spin{margin:0 auto}
+.tpE .row{display:flex;justify-content:center;gap:.6rem;margin-top:1rem}
+button.tta{background:none;padding:0;color:inherit;text-align:left;cursor:pointer;border-radius:1rem}
+button.tta:hover b{text-decoration:underline;text-underline-offset:.25rem}
 .tch{display:flex;align-items:center;justify-content:space-between;padding:1.3rem 1.4rem 1rem 1.8rem;font:800 1.4rem Inter,system-ui,sans-serif}
 .tch button{width:3rem;height:3rem;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);color:#fff;font-size:1.3rem}
 .tch button:hover{background:rgba(255,255,255,.2)}
@@ -868,7 +899,7 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
   <div id="ttStage" class="widget">
     <div id="ttCard" class="cover"><img id="ttCover" alt="" referrerpolicy="no-referrer"><div id="ttFrame"></div><div id="ttHit"></div><div id="ttMsg"></div></div>
     <div id="ttRail"><div id="ttNav"><button class="ttnav" id="ttUp" type="button" title="Previous video  (↑)"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button><button class="ttnav" id="ttDown" type="button" title="Next video  (↓)"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button class="ttnav ttauto" id="ttAuto" type="button"><svg viewBox="0 0 24 24"><path d="m7 6.5 5 5 5-5M7 12.5l5 5 5-5"/></svg></button><span class="ttlab">Auto scroll</span></div><div id="ttActs"></div></div>
-    <aside id="ttSide"><div id="ttTabs"></div><div id="ttNextWrap"><div class="ttlbl">Up next</div><div id="ttNext"></div></div><div id="ttInfo"></div><div id="ttCom"></div></aside>
+    <aside id="ttSide"><div id="ttTabs"></div><div id="ttNextWrap"><div class="ttlbl">Up next</div><div id="ttNext"></div></div><div id="ttInfo"></div><div id="ttCom"></div><div id="ttProf"><div class="tch"><span id="tpTitle"></span><button data-tp="x" title="Close">✕</button></div><div id="tpL"></div></div></aside>
   </div>
 
   <div id="dock">
@@ -958,7 +989,7 @@ const I18N = (() => {
   let saved = null; try { saved = (JSON.parse(localStorage.getItem('wp.look') || '{}') || {}).lang } catch(e){}
   const lang = saved || (/^vi\b/i.test(navigator.language || '') ? 'vi' : 'en');
   const V = window.WP_VI || {dict: {}, patterns: []};
-  const NOTR = '#qlist .qm,#flow,#lyrics2,#npTitle,#npSub,#rTop,#rSongs,#rEnt,#rCols,#rSug,#rFeed .rrow,#clock,.upNotes,#lyrList .lv,#mvPick .tip,.bgv,#flowLabel,svg,script,style,textarea,.selftest';
+  const NOTR = '#qlist .qm,#flow,#tpTitle,.tpH,.tpB,.tpv,#lyrics2,#npTitle,#npSub,#rTop,#rSongs,#rEnt,#rCols,#rSug,#rFeed .rrow,#clock,.upNotes,#lyrList .lv,#mvPick .tip,.bgv,#flowLabel,svg,script,style,textarea,.selftest';
   const tr0 = t => {
     if (lang !== 'vi' || !t) return t; const k = t.trim(); if (!k) return t;
     const v = V.dict[k]; if (v != null) return t.replace(k, v);
@@ -2170,7 +2201,7 @@ function stopInternal(){ YTA.stop(); SCW.stop(); LOC.stop(); app.classList.remov
 // each video plays in TikTok's official embed player. Scroll / ↑ ↓ for the next one, like the app.
 const TT = {
   on: false, list: [], i: -1, mode: 'foryou', q: '', pos: 0, dur: 0, playing: false, started: false, ready: false, auto: true,
-  frame: null, pre: null, bgFor: '', bgSync: 0, poll: 0, taking: false, asked: 0, more: true, errs: 0, wheelAt: 0, wd: 0, slow: 0, busy: {},
+  frame: null, pool: [], calm: false, fresh: false, t0: 0, stats: [], page: 'feed', prof: null, stash: null, who: '', pp: 0, ptaking: false, bgFor: '', bgSync: 0, poll: 0, taking: false, asked: 0, more: true, errs: 0, wheelAt: 0, wd: 0, slow: 0, busy: {},
   src(id){ return `https://www.tiktok.com/player/v1/${id}?autoplay=${this.auto ? 1 : 0}&loop=0&controls=0&progress_bar=0&play_button=0&volume_control=0&fullscreen_button=0&timestamp=0&music_info=0&description=0&rel=0&native_context_menu=0&closed_caption=0` },
   enter(auto = true){
     if (this.on || MIRROR) return; this.on = true; this.auto = auto; app.classList.add('tt');
@@ -2179,48 +2210,73 @@ const TT = {
     stopInternal(); YTV.stop(); S.src = 'tt'; this.feed('foryou');
   },
   leave(){
-    if (!this.on) return; this.on = false; app.classList.remove('tt'); clearInterval(this.poll); clearTimeout(this.slow); clearTimeout(this.wd); this.unload(); this.list = []; this.i = -1;
+    if (!this.on) return; this.keep(true); this.on = false; app.classList.remove('tt'); clearInterval(this.poll); clearInterval(this.pp);
+    this.prof = null; this.stash = null; this.page = 'feed'; this.who = ''; $('#ttSide').classList.remove('prof'); clearTimeout(this.slow); clearTimeout(this.wd); this.unload(); this.list = []; this.i = -1;
     if (T) invoke('tiktok_stop').catch(() => {});
     if (S.src === 'tt'){ S.src = 'none'; setTrack(null) }
   },
   feed(mode, q){
-    this.mode = mode === 'search' && q ? 'search' : 'foryou'; this.q = this.mode === 'search' ? q : this.q; this.list = []; this.i = -1; this.more = true; this.errs = 0;
+    this.keep(true);   // For You so far, for when it comes back
+    this.mode = mode === 'search' && q ? 'search' : ['following', 'friends'].includes(mode) ? mode : 'foryou'; this.q = this.mode === 'search' ? q : this.q;
+    this.page = 'feed'; this.stash = null; this.who = ''; this.list = []; this.i = -1; this.more = true; this.errs = 0;
     this.unload(); $('#ttCover').removeAttribute('src'); renderTT();
-    this.msg(this.mode === 'search' ? `Searching TikTok for “${q}”…` : 'Loading For You…', 'wait');
+    this.msg(this.mode === 'search' ? `Searching TikTok for “${q}”…` : this.mode === 'following' ? 'Loading Following…' : this.mode === 'friends' ? 'Loading Friends…' : 'Loading For You…', 'wait');
     if (!T){ this.demo(); return }
     invoke('tiktok_feed', {mode: this.mode, query: this.mode === 'search' ? q : ''}).catch(() => this.msg("Couldn't open TikTok", 'open'));
-    clearInterval(this.poll); this.poll = setInterval(() => this.take(), 1500); setTimeout(() => this.take(), 1200);
-    clearTimeout(this.slow); this.slow = setTimeout(() => { if (this.on && !this.list.length) this.msg('TikTok is slow to answer. It may want you to sign in or do a quick check.', 'check') }, 20000);
+    // until the hidden TikTok page hands its first videos, ask it every 0.4 s (then every 1.5 s)
+    clearInterval(this.poll); this.fresh = false; this.poll = setInterval(() => this.take(), 400); setTimeout(() => this.take(), 250);
+    clearTimeout(this.slow); this.slow = setTimeout(() => { this.calmPoll(); if (this.on && !this.list.length) this.msg('TikTok is slow to answer. It may want you to sign in or do a quick check.', 'check') }, 20000);
+    // For You starts at once on the videos you had not reached last time, like TikTok's app; the new ones
+    // from TikTok follow them
+    if (this.mode === 'foryou'){ const k = store.get('ttAhead', null), who = !!(S.acc && S.acc.tiktok);
+      if (k && Array.isArray(k.clips) && k.clips.length && k.who === who && Date.now() - k.at < 12 * 3600e3) this.add(k.clips) }
+  },
+  calmPoll(){ if (this.fresh) return; this.fresh = true; clearInterval(this.poll); if (this.on) this.poll = setInterval(() => this.take(), 1500) },
+  // what is left to watch of For You, for next time (12 videos at most)
+  keep(now){
+    if (this.mode !== 'foryou' || !T || !this.list.length) return; clearTimeout(this.keepT);
+    const k = {at: Date.now(), who: !!(S.acc && S.acc.tiktok), clips: this.list.slice(this.i + 1).filter(c => !c.bad).slice(0, 12)};
+    if (now) store.set('ttAhead', k); else this.keepT = setTimeout(() => store.set('ttAhead', k), 800);
   },
   add(clips){
     const have = new Set(this.list.map(c => c.id)), add = (clips || []).filter(c => c && c.id && !have.has(c.id) && (have.add(c.id), true));
     if (!add.length) return; this.list.push(...add);
-    if (this.i < 0){ clearTimeout(this.slow); this.show(0) } else renderTT();
+    if (this.i < 0){ clearTimeout(this.slow); this.show(0) } else { renderTT(); this.prefetch(); this.keep() }
   },
   async take(){
+    if (this.page === 'user'){ this.profTake(); return }   // a profile's videos come from the profile page
     if (!this.on || this.taking || !T) return;
     if (this.list.length - this.i > 8 && Date.now() - (this.tookAt || 0) < 6000) return;   // plenty ready: ask less often
     this.taking = true; this.tookAt = Date.now();
     try {
       const r = await invoke('tiktok_take'); if (!this.on) return;
+      if ((r.clips || []).length) this.calmPoll();
       if (r.ready) this.more = r.more !== false;
       this.add(r.clips);
       if (r.captcha && !this.list.length) this.msg('TikTok wants a quick check before it shows videos.', 'check');
+      else if (r.ready && r.more === false && !this.list.length && this.mode !== 'foryou'){ clearTimeout(this.slow)
+        this.msg(this.mode === 'following' ? 'No videos from the accounts you follow yet.' : this.mode === 'friends' ? 'No videos from your friends yet.' : 'TikTok found no videos for that.') }
       if (this.i >= this.list.length - 5 && this.more && Date.now() - this.asked > 3000){ this.asked = Date.now(); invoke('tiktok_more').catch(() => {}) }   // keep a few videos ahead
     } catch(e){} finally { this.taking = false }
   },
   show(i, back){
     const c = this.list[i]; if (!c) return;
-    this.i = i; this.pos = 0; this.dur = c.duration || 0; this.playing = false; this.started = false; this.ready = false; S.src = 'tt';
+    this.i = i; this.pos = 0; this.dur = c.duration || 0; this.playing = false; this.started = false; this.ready = false; this.calm = false; this.t0 = performance.now(); S.src = 'tt';
     const card = $('#ttCard'); card.classList.remove('swap', 'back', 'paused'); void card.offsetWidth; card.classList.add('cover', 'swap'); card.classList.toggle('back', !!back);
     if (c.cover) $('#ttCover').src = c.cover; else $('#ttCover').removeAttribute('src');
-    const host = $('#ttFrame'), pre = this.pre && this.pre.id === c.id ? this.pre : null; this.pre = null;
-    [...host.children].forEach(f => { if (!pre || f !== pre.frame) f.remove() }); this.frame = null; this.ambient(c);
-    if (pre){   // loaded in the background while the last one played: starts at once
-      this.frame = pre.frame; this.frame.classList.remove('pre'); this.ready = pre.ready;
-      if (this.ready){ this.vol(); this.send('play') }
-    } else if (T){ const f = this.make(c.id, this.auto); host.appendChild(f); this.frame = f }
+    // the video you leave stays loaded (out of sight, paused) for going back
+    const was = this.pool.find(p => p.frame === this.frame);
+    if (was && was.id !== c.id){ was.was = true; was.frame.classList.add('pre'); this.sendTo(was.frame, 'pause') }
+    this.frame = null; this.ambient(c);
+    const p = this.entry(c.id);
+    if (p){   // already loaded (and its start buffered) out of sight: starts at once
+      clearTimeout(p.wd); this.frame = p.frame; p.frame.classList.remove('pre'); this.ready = p.ready;
+      if (p.ready){ if (p.warm || p.was) this.send('seekTo', 0); if (this.auto){ this.vol(); this.send('play') } else this.calm = true }
+    } else if (T){ const f = this.make(c.id, this.auto); $('#ttFrame').appendChild(f); this.frame = f; this.pool.push({id: c.id, frame: f, ready: false, warm: false}) }
     else { this.ready = true; this.started = this.playing = this.auto }   // browser demo: covers only
+    this.trim(); this.keep();
+    if (this.page === 'user' && this.prof && this.i >= this.list.length - 4) this.prof.want = true;   // a profile's next videos
+    renderProf();
     this.msg('');
     setTrack({id: c.id, title: (c.desc || '').split('\n')[0].replace(/\s+/g, ' ').trim() || c.nick || ('@' + c.author), artist: '@' + c.author, album: c.music ? '♪ ' + c.music : '',
       art: c.cover, url: `https://www.tiktok.com/@${c.author}/video/${c.id}`, duration: c.duration, source: 'tiktok', play: c.id});
@@ -2229,20 +2285,97 @@ const TT = {
   },
   make(id, auto){ const f = document.createElement('iframe'); f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture'; f.title = 'TikTok';
     f.src = this.src(id).replace(/autoplay=\d/, 'autoplay=' + (auto ? 1 : 0)); return f },
-  // the next video loads quietly under this one once this one plays smoothly
-  prepare(){
-    const n = this.list[this.i + 1]; if (!T || !n || PW.low() || (this.pre && this.pre.id === n.id)) return;
-    if (this.pre) this.pre.frame.remove();
-    const f = this.make(n.id, false); f.classList.add('pre'); f.tabIndex = -1; $('#ttFrame').appendChild(f); this.pre = {id: n.id, frame: f, ready: false};
+  /* Players around the video you watch, the way TikTok's own web player does it: the one before (kept from
+     when you watched it) and the two after. The next ones load out of sight one at a time, as soon as the
+     video on screen shows its first frame, and each buffers its first moments silently (muted play, pause,
+     back to 0), so a swipe starts the next video at once. Power saving: only the next one. Each video is
+     still loaded once, as before (TikTok limits how often one app may open its player). */
+  near(){ const low = PW.low(); return {back: low ? 0 : 1, ahead: low ? 1 : 2} },
+  around(){
+    const {back, ahead} = this.near(), behind = [], next = [];
+    for (let k = this.i - 1; k >= 0 && behind.length < back; k--) if (!this.list[k].bad) behind.push(this.list[k].id);
+    for (let k = this.i + 1; k < this.list.length && next.length < ahead; k++) if (!this.list[k].bad) next.push(this.list[k].id);
+    return {behind, next};
   },
-  failed(c){ this.errs++; if (this.errs < 4 && this.i < this.list.length - 1) this.show(this.i + 1); else this.msg("TikTok won't play its videos here right now.", 'open') },
+  entry(id){ return this.pool.find(p => p.id === id) },
+  drop(p){ clearTimeout(p.wd); clearTimeout(p.mt); p.frame.remove(); this.pool = this.pool.filter(x => x !== p) },
+  trim(){ const a = this.around(), c = this.list[this.i], keep = new Set([c && c.id, ...a.behind, ...a.next]);
+    for (const p of [...this.pool]) if (!keep.has(p.id)) this.drop(p) },
+  prefetch(){
+    if (!T || MIRROR || !this.on || !this.calm) return;
+    if (this.pool.some(p => p.frame !== this.frame && !p.ready)) return;   // one at a time: the video on screen keeps the connection
+    const id = this.around().next.find(x => !this.entry(x)); if (!id) return;
+    const f = this.make(id, false); f.classList.add('pre'); f.tabIndex = -1; f.setAttribute('aria-hidden', 'true'); $('#ttFrame').appendChild(f);
+    const p = {id, frame: f, ready: false, warm: false}; this.pool.push(p);
+    p.wd = setTimeout(() => { if (!p.ready && this.pool.includes(p) && p.frame !== this.frame){ p.ready = true; this.prefetch() } }, 9000);   // a slow one does not hold up the rest
+  },
+  // messages from a player out of sight: once loaded it is muted, and only when TikTok confirms the mute
+  // it plays a moment (so its first seconds download) and goes back to 0; a video TikTok can't play is skipped
+  onPre(p, d){
+    if (d.type === 'onPlayerReady'){ p.ready = true; clearTimeout(p.wd); this.sendTo(p.frame, 'mute'); this.prefetch() }
+    else if (d.type === 'onMute' && (d.value === true || d.value === 1 || (d.value && d.value.muted === true)) && !p.warm && !p.was && !p.primed){ p.primed = true; this.sendTo(p.frame, 'play');
+      p.mt = setTimeout(() => { if (p.frame !== this.frame){ this.sendTo(p.frame, 'pause'); p.warm = true } }, 4000) }
+    else if (d.type === 'onStateChange' && d.value === 1){ this.sendTo(p.frame, 'pause'); this.sendTo(p.frame, 'seekTo', 0); clearTimeout(p.mt); p.warm = true }
+    else if (d.type === 'onPlayerError'){ const c = this.list.find(x => x.id === p.id); if (c) c.bad = true; this.drop(p); renderTT(); this.prefetch() }
+  },
+  // someone's profile beside the video (their details, then their videos), read from a third hidden TikTok page
+  openProfile(name, hint){
+    name = String(name || '').replace(/^@/, '').trim(); if (!name) return;
+    const side = $('#ttSide'); side.classList.remove('com'); side.classList.add('prof');
+    if (!this.prof || this.prof.name !== name){
+      this.prof = {name, user: hint || null, clips: [], more: true, ready: false, at: Date.now()};
+      if (T){ invoke('tiktok_user', {name}).catch(() => {}); this.profPoll(400); setTimeout(() => this.profTake(), 250) } else this.profDemo();
+    } else if (T) this.profPoll(this.prof.clips.length ? 1500 : 400);
+    $('#tpL').scrollTop = 0; renderProf(); renderTT();
+  },
+  closeProfile(){ $('#ttSide').classList.remove('prof'); if (this.page !== 'user') clearInterval(this.pp); renderTT() },
+  profPoll(ms){ clearInterval(this.pp); this.pp = setInterval(() => this.profTake(), ms) },
+  async profTake(){
+    const P = this.prof; if (!P || !T || !this.on || this.ptaking) return;
+    if (this.page !== 'user' && !$('#ttSide').classList.contains('prof')){ clearInterval(this.pp); return }
+    this.ptaking = true;
+    try {
+      const r = await invoke('tiktok_take', {page: 'user'}); if (this.prof !== P) return;
+      if (r.user) P.user = {...(P.user || {}), ...r.user};
+      const have = new Set(P.clips.map(c => c.id)), add = (r.clips || []).filter(c => c && c.id && !have.has(c.id));
+      if (add.length){ P.clips.push(...add); if (!P.slow){ P.slow = true; this.profPoll(1500) } }
+      if (r.ready){ P.ready = true; P.more = r.more !== false }
+      P.check = !!r.captcha && !P.clips.length;
+      if (this.page === 'user' && this.who === P.name){ if (add.length) this.add(add); if (this.i >= this.list.length - 4) P.want = true }
+      if (P.want && P.more && Date.now() - (P.asked || 0) > 2500){ P.asked = Date.now(); P.want = false; invoke('tiktok_more', {page: 'user'}).catch(() => {}) }
+      renderProf();
+    } catch(e){} finally { this.ptaking = false }
+  },
+  // a video in the profile: watch that account's videos from it on (the list you came from waits)
+  watchProfile(k){
+    const P = this.prof; if (!P || !P.clips[k]) return;
+    if (this.page !== 'user'){ this.keep(true); this.stash = {mode: this.mode, q: this.q, list: this.list, i: this.i, more: this.more} }
+    this.mode = 'user'; this.page = 'user'; this.who = P.name; this.unload(); this.list = P.clips.slice(); this.i = -1; this.errs = 0; this.auto = true; this.more = P.more;
+    $('#ttSide').classList.remove('prof'); if (T) this.profPoll(1500);
+    this.show(k);
+  },
+  // back to the list you were in before the profile's videos, on the video you left
+  back(){
+    const s = this.stash; if (!s) return false; this.stash = null;
+    this.mode = s.mode; this.q = s.q; this.page = 'feed'; this.who = ''; this.unload(); this.list = s.list; this.more = s.more; this.i = -1; this.errs = 0;
+    if (this.list[s.i]) this.show(s.i); else this.feed(s.mode, s.q);
+    return true;
+  },
+  reload(){ if (this.page === 'user' && this.prof){ const n = this.prof.name; this.prof = null; this.openProfile(n) } else this.feed(this.mode, this.q) },
+  profDemo(){ const P = this.prof; setTimeout(() => { if (this.prof !== P) return; const mine = this.list.filter(c => c.author === P.name), f = mine[0] || {};
+    P.user = {name: P.name, nick: f.nick || P.name, avatar: f.avatar || '', bio: 'Lo-fi, city pop and vinyl finds\nNew clips every week', verified: true, private: false, following: 128, followers: 48200, likes: 1260000, videos: mine.length};
+    P.clips = mine.slice(); P.ready = true; P.more = false; renderProf() }, 350) },
+  failed(c){ this.errs++; c.bad = true; const n = this.list.findIndex((x, k) => k > this.i && !x.bad);
+    if (this.errs < 4 && n > 0) this.show(n); else this.msg("TikTok won't play its videos here right now.", 'open') },
   go(d){
-    if (!this.on || !this.list.length) return; this.auto = true; const j = this.i + d;
+    if (!this.on || !this.list.length) return; this.auto = true; let j = this.i + d;
+    while (this.list[j] && this.list[j].bad) j += d < 0 ? -1 : 1;   // skip the ones TikTok can't play
     if (j < 0) return;
     if (j >= this.list.length){ this.take(); toast('More videos are on the way'); return }
     this.errs = 0; this.show(j, d < 0);
   },
-  send(type, value = null){ try { this.frame && this.frame.contentWindow.postMessage({type, value, 'x-tiktok-player': true}, '*') } catch(e){} },
+  sendTo(f, type, value = null){ try { f && f.contentWindow.postMessage({type, value, 'x-tiktok-player': true}, '*') } catch(e){} },
+  send(type, value = null){ this.sendTo(this.frame, type, value) },
   mirrorShow(c){
     this.unload(); this.started = false; this.playing = false; const card = $('#ttCard'); card.classList.remove('paused'); card.classList.add('cover');
     if (c && c.cover) $('#ttCover').src = c.cover; else $('#ttCover').removeAttribute('src');
@@ -2262,30 +2395,31 @@ const TT = {
   },
   seek(sec){ this.send('seekTo', Math.max(0, sec)); this.pos = Math.max(0, sec) },
   vol(){ this.send(S.muted ? 'mute' : 'unMute') },
-  unload(){ const h = $('#ttFrame'); if (h) h.innerHTML = ''; this.frame = null; this.pre = null; this.playing = false; this.ready = false; this.dropBg() },
+  unload(){ for (const p of this.pool){ clearTimeout(p.wd); clearTimeout(p.mt) } const h = $('#ttFrame'); if (h) h.innerHTML = ''; this.frame = null; this.pool = []; this.playing = false; this.ready = false; this.dropBg() },
   dropBg(){ const a = $('#ttAmbFrame'); if (a) a.innerHTML = ''; this.bgFor = ''; const am = $('#ttAmb'); if (am) am.classList.remove('on') },
   state(){ const card = $('#ttCard'); card.classList.toggle('cover', !this.started || !T); card.classList.toggle('paused', this.ready && !this.playing); renderPlay() },
   onMsg(e){
-    const pre = this.pre && e.source === this.pre.frame.contentWindow;
-    if (!pre && (!this.frame || e.source !== this.frame.contentWindow)) return;
+    const p = this.pool.find(x => x.frame.contentWindow === e.source);
+    if (!p && (!this.frame || e.source !== this.frame.contentWindow)) return;
     let d = e.data; if (typeof d === 'string'){ try { d = JSON.parse(d) } catch(x){ return } }
     if (!d || typeof d.type !== 'string') return;
-    if (pre){ if (d.type === 'onPlayerReady' || d.type === 'onStateChange'){ this.pre.ready = true; if (d.value === 1) this.send.call({frame: this.pre.frame}, 'pause') } return }
+    if (p && p.frame !== this.frame){ this.onPre(p, d); return }
+    if (p && d.type === 'onPlayerReady') p.ready = true;
     if (MIRROR){   // another display: a silent copy that follows the main window
       if (d.type === 'onPlayerReady'){ this.ready = true; this.send('mute'); this.send(this.mplay ? 'play' : 'pause') }
       else if (d.type === 'onStateChange'){ this.ready = true; if (d.value === 1){ this.playing = true; this.started = true } else if (d.value === 2 || d.value === 0) this.playing = false; $('#ttCard').classList.toggle('cover', !this.started) }
       else if (d.type === 'onCurrentTime' && d.value) this.pos = +d.value.currentTime || 0;
       return;
     }
-    if (d.type === 'onPlayerReady'){ this.ready = true; clearTimeout(this.wd); if (this.auto){ this.vol(); this.send('play') } this.state() }
+    if (d.type === 'onPlayerReady'){ this.ready = true; clearTimeout(this.wd); if (this.auto){ this.vol(); this.send('play') } else { this.calm = true; this.prefetch() } this.state() }
     else if (d.type === 'onStateChange'){
       this.ready = true; clearTimeout(this.wd);
-      if (d.value === 1){ this.playing = true; this.started = true; this.errs = 0; this.vol() }
+      if (d.value === 1){ this.playing = true; this.started = true; this.errs = 0; this.vol()
+        if (!this.calm){ this.calm = true; this.stats.push(Math.round(performance.now() - this.t0)); if (this.stats.length > 20) this.stats.shift(); this.prefetch() } }
       else if (d.value === 2 || d.value === 0) this.playing = false;
       this.state(); if (d.value === 0) this.ended();
     }
-    else if (d.type === 'onCurrentTime' && d.value){ this.pos = +d.value.currentTime || 0; this.dur = +d.value.duration || this.dur;
-      if (this.pos > 1.5 && this.playing) this.prepare() }
+    else if (d.type === 'onCurrentTime' && d.value){ this.pos = +d.value.currentTime || 0; this.dur = +d.value.duration || this.dur }
     else if (d.type === 'onPlayerError'){ clearTimeout(this.wd); const c = this.list[this.i]; setTimeout(() => { if (this.list[this.i] === c) this.failed(c) }, 700) }
   },
   // Auto scroll (the button under ↓): the next video when one ends; off, each video loops like in the app
@@ -2319,7 +2453,8 @@ const TTI = {
   talk: '<svg viewBox="0 0 24 24"><path d="M5 18.5V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H8z"/></svg>',
   share: '<svg viewBox="0 0 24 24"><path d="M14 5l6 6-6 6M20 11H9a5 5 0 0 0-5 5v2"/></svg>',
   plays: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></svg>',
-  save: '<svg viewBox="0 0 24 24"><path d="M7 4.5h10a1 1 0 0 1 1 1v14l-6-3.8-6 3.8v-14a1 1 0 0 1 1-1z"/></svg>'
+  save: '<svg viewBox="0 0 24 24"><path d="M7 4.5h10a1 1 0 0 1 1 1v14l-6-3.8-6 3.8v-14a1 1 0 0 1 1-1z"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-label="Verified"><circle cx="12" cy="12" r="10" fill="#20d5ec"/><path d="M7.6 12.4l3 3 5.8-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 };
 const ago = t => { const s = Date.now() / 1000 - t; if (!(t > 0) || s < 0) return ''; if (s < 3600) return Math.max(1, Math.round(s / 60)) + 'm'; if (s < 86400) return Math.round(s / 3600) + 'h'; if (s < 86400 * 30) return Math.round(s / 86400) + 'd'; return new Date(t * 1000).toLocaleDateString() };
 // set HTML only when it changed: redrawing a button between mouse down and up would swallow the click
@@ -2335,14 +2470,16 @@ addEventListener('resize', () => fitRail());
 function renderTT(){
   if (!TT.on) return; requestAnimationFrame(fitRail);
   const c = TT.list[TT.i], acc = S.acc || {}, signed = MIRROR ? !!TT.signed : !!acc.tiktok;
-  setHTML($('#ttTabs'), `<button class="ttt ${TT.mode === 'foryou' ? 'on' : ''}" data-tt="foryou">For You</button>`
+  const tab = (k, label) => `<button class="ttt ${TT.mode === k ? 'on' : ''}" data-tt="${k}">${label}</button>`;
+  setHTML($('#ttTabs'), tab('foryou', 'For You') + tab('following', 'Following') + tab('friends', 'Friends')
+    + (TT.mode === 'user' && TT.who ? `<button class="ttt on" data-tt="profile" title="Profile">@${esc(TT.who)}</button>` : '')
     + (TT.q ? `<button class="ttt ${TT.mode === 'search' ? 'on' : ''}" data-tt="search" title="${esc(TT.q)}">${I.search}<span>${esc(TT.q)}</span></button>` : '')
     + (T && !signed ? `<button class="ttt ghost" data-tt="login" title="Your own For You">Sign in to TikTok</button>` : ''));
-  setHTML($('#ttNext'), TT.list.slice(TT.i + 1, TT.i + 4).map((n, k) => `<button class="ttn" data-tj="${TT.i + 1 + k}" title="${esc((n.desc || '@' + n.author).slice(0, 80))}">${n.cover ? `<img src="${esc(n.cover)}" alt="" referrerpolicy="no-referrer" loading="lazy">` : ''}</button>`).join(''));
+  setHTML($('#ttNext'), TT.list.map((n, k) => [n, k]).filter(([n, k]) => k > TT.i && !n.bad).slice(0, 3).map(([n, k]) => `<button class="ttn" data-tj="${k}" title="${esc((n.desc || '@' + n.author).slice(0, 80))}">${n.cover ? `<img src="${esc(n.cover)}" alt="" referrerpolicy="no-referrer" loading="lazy">` : ''}</button>`).join(''));
   $('#ttUp').disabled = TT.i <= 0; $('#ttDown').disabled = !TT.list.length;
   const au = S.look.ttAuto !== false; $('#ttAuto').classList.toggle('on', au);
   $('#ttAuto').title = au ? 'Auto scroll is on: the next video plays when one ends' : 'Auto scroll is off: each video loops';
-  setHTML($('#ttInfo'), c ? `<div class="tta">${c.avatar ? `<img src="${esc(c.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>@${esc(c.author)}</b><span>${esc(c.nick || '')}</span></div></div>`
+  setHTML($('#ttInfo'), c ? `<button class="tta" data-tt="prof" title="Profile">${c.avatar ? `<img src="${esc(c.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>@${esc(c.author)}</b><span>${esc(c.nick || '')}</span></div></button>`
     + (c.desc ? `<p class="ttd ${TT.capOpen ? 'open' : ''}">${esc(c.desc).replace(/(^|\s)(#[^\s#]+)/g, '$1<i>$2</i>')}</p><button class="ttmore" data-tt="more">${TT.capOpen ? 'See less' : 'See more'}</button>` : '')
     + (c.music ? `<div class="ttm">${TTI.note}<span>${esc(c.music)}</span></div>` : '')
     + `<div class="tts"><span title="Views">${TTI.plays}${ttN(c.plays)}</span></div>`
@@ -2354,6 +2491,21 @@ function renderTT(){
     + act('comment', TTI.talk, c.comments, 'Comments', $('#ttSide').classList.contains('com') ? 'on' : '')
     + act('save', TTI.save, c.saves, c.saved ? 'Remove from Favorites' : 'Save to Favorites', (c.saved ? 'saved' : '') + (TT.busy.save ? ' busy' : ''))
     + act('share', TTI.share, c.shares, 'Share — copy the link') : '');
+}
+// someone's profile: who they are, then a grid of their videos (a click plays them from that one)
+function renderProf(){
+  const P = TT.prof; if (!P || !$('#ttSide').classList.contains('prof')) return;
+  const u = P.user || {name: P.name}, stuck = !P.clips.length && !P.check && Date.now() - P.at > 20000;
+  setHTML($('#tpTitle'), '@' + esc(P.name));
+  const head = `<div class="tpH">${u.avatar ? `<img src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer">` : '<i></i>'}<div><b>${esc(u.nick || P.name)}${u.verified ? TTI.check : ''}</b><span>@${esc(P.name)}</span></div></div>`
+    + `<div class="tpS">${P.user && (u.followers || u.following || u.likes) ? `<span><b>${ttN(u.following)}</b>Following</span><span><b>${ttN(u.followers)}</b>Followers</span><span><b>${ttN(u.likes)}</b>Likes</span>` : ''}</div>`
+    + (u.bio ? `<p class="tpB">${esc(u.bio)}</p>` : '') + `<button class="abtn" data-tp="ext">Open in TikTok</button>`;
+  const cur = TT.page === 'user' && TT.who === P.name ? (TT.list[TT.i] || {}).id : '';
+  const tiles = P.clips.map((c, k) => `<button class="tpv ${c.id === cur ? 'on' : ''}" data-tk="${k}" title="${esc((c.desc || '').slice(0, 80))}">${c.cover ? `<img src="${esc(c.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}<span>${TTI.plays}${ttN(c.plays)}</span></button>`).join('');
+  const tail = P.check || stuck ? `<div class="tpE">${P.check ? 'TikTok wants a quick check before it shows this profile.' : 'TikTok is slow to answer.'}<div class="row"><button class="abtn" data-tp="show">Open TikTok</button><button class="abtn" data-tp="retry">Try again</button></div></div>`
+    : !P.ready || (P.more && !P.clips.length) ? `<div class="tpE"><i class="spin"></i></div>`
+    : !P.clips.length ? `<div class="tpE">${u.private ? 'This account is private.' : 'No videos yet.'}</div>` : '';
+  setHTML($('#tpL'), head + `<div class="tpG">${tiles}${tail}</div>`);
 }
 // comments of the video on screen, read from its TikTok page (writing one opens TikTok)
 async function ttComments(){
@@ -2372,7 +2524,7 @@ async function ttComments(){
 function ttCheck(){ invoke('tiktok_show', {on: true, video: true}).catch(() => {}); toast('TikTok wants a quick check · slide the puzzle in the TikTok window, then close it') }
 async function ttAct(kind){
   const c = TT.list[TT.i]; if (!c) return;
-  if (kind === 'comment'){ const side = $('#ttSide'); side.classList.toggle('com'); renderTT(); ttComments(); return }
+  if (kind === 'comment'){ const side = $('#ttSide'); side.classList.remove('prof'); side.classList.toggle('com'); renderTT(); ttComments(); return }
   if (kind === 'share'){ const url = `https://www.tiktok.com/@${c.author}/video/${c.id}`;
     try { await navigator.clipboard.writeText(url); toast('Link copied') } catch(e){ openExternal(url) } return }
   if (T && !(S.acc && S.acc.tiktok)){ toast(kind === 'like' ? 'Sign in to TikTok to like videos' : 'Sign in to TikTok to save videos'); openAccounts(); return }
@@ -2390,24 +2542,38 @@ async function ttAct(kind){
 $('#ttStage').addEventListener('click', e => {
   const ta = e.target.closest('[data-ta]'); if (ta){ e.stopPropagation(); ttAct(ta.dataset.ta); return }
   if (e.target.closest('[data-tc="x"]')){ e.stopPropagation(); $('#ttSide').classList.remove('com'); renderTT(); return }
+  const tp = e.target.closest('[data-tp],[data-tk]');
+  if (tp){ e.stopPropagation(); const P = TT.prof, k = tp.dataset.tp;
+    if (tp.dataset.tk) TT.watchProfile(+tp.dataset.tk);
+    else if (k === 'x') TT.closeProfile();
+    else if (k === 'ext' && P) openExternal('https://www.tiktok.com/@' + P.name);
+    else if (k === 'show'){ invoke('tiktok_show', {on: true, page: 'user'}).catch(() => {}); toast('Answer TikTok there, then close that window') }
+    else if (k === 'retry' && P){ TT.prof = null; TT.openProfile(P.name) }
+    return }
   const b = e.target.closest('[data-tt],[data-tj],[data-ttm]'); if (!b) return; e.stopPropagation();
   if (b.dataset.tj){ TT.auto = true; TT.errs = 0; TT.show(+b.dataset.tj); return }
   const a = b.dataset.tt || b.dataset.ttm, c = TT.list[TT.i];
-  if (a === 'foryou') TT.feed('foryou');
-  else if (a === 'search' && TT.q) TT.feed('search', TT.q);
+  if (a === 'foryou' || a === 'following' || a === 'friends'){
+    if (a !== 'foryou' && T && !(S.acc && S.acc.tiktok)){ toast(a === 'following' ? 'Sign in to TikTok to see the accounts you follow' : 'Sign in to TikTok to see your friends’ videos'); openAccounts(); return }
+    if (!(TT.stash && TT.stash.mode === a && TT.back())) TT.feed(a) }
+  else if (a === 'search' && TT.q){ if (!(TT.stash && TT.stash.mode === 'search' && TT.stash.q === TT.q && TT.back())) TT.feed('search', TT.q) }
+  else if (a === 'profile') TT.openProfile(TT.who);
+  else if (a === 'prof' && c) TT.openProfile(c.author, {name: c.author, nick: c.nick, avatar: c.avatar});
   else if (a === 'login') openAccounts();
   else if (a === 'more'){ TT.capOpen = !TT.capOpen; renderTT() }
   else if (a === 'ext') openExternal(c ? `https://www.tiktok.com/@${c.author}/video/${c.id}` : 'https://www.tiktok.com/foryou');
   else if (a === 'show'){ invoke('tiktok_show', {on: true}).catch(() => {}); toast('Answer TikTok there, then press Done') }
-  else if (a === 'done'){ invoke('tiktok_show', {on: false}).catch(() => {}); TT.feed(TT.mode, TT.q) }
-  else if (a === 'retry') TT.feed(TT.mode, TT.q);
+  else if (a === 'done'){ invoke('tiktok_show', {on: false}).catch(() => {}); TT.reload() }
+  else if (a === 'retry') TT.reload();
 });
 $('#ttHit').addEventListener('click', e => { e.stopPropagation(); if (TT.list.length) togglePlay() });
 $('#ttUp').addEventListener('click', e => { e.stopPropagation(); TT.go(-1) });
 $('#ttDown').addEventListener('click', e => { e.stopPropagation(); TT.go(1) });
 $('#ttAuto').addEventListener('click', e => { e.stopPropagation(); S.look.ttAuto = S.look.ttAuto === false; store.set('look', S.look); renderTT();
   toast(S.look.ttAuto ? 'Auto scroll on · the next video plays when one ends' : 'Auto scroll off · each video loops') });
-dragScrollY($('#ttInfo'));
+dragScrollY($('#ttInfo')); dragScrollY($('#tpL'));
+$('#tpL').addEventListener('scroll', e => { const l = e.currentTarget; if (TT.prof && l.scrollTop + l.clientHeight > l.scrollHeight - 300) TT.prof.want = true });
+$('#ttCover').addEventListener('error', e => e.target.removeAttribute('src'));
 $('#ttStage').addEventListener('wheel', e => {
   if (!e.target.closest('#ttCard,#ttRail')) return; e.preventDefault(); e.stopPropagation();
   const now = Date.now(); if (Math.abs(e.deltaY) < 4 || now - TT.wheelAt < 650) return; TT.wheelAt = now; TT.go(e.deltaY > 0 ? 1 : -1);
@@ -3619,6 +3785,7 @@ async function selfTest(){
     const fc = FRAMES[id + 1]; ok('Video frame colours', !!(fc && fc.c), fc ? (fc.c ? 'loaded' : 'loading / blocked') : 'not requested yet')
     for (const pl of [YTV, YTA]){ try { const q = pl.p && pl.p.getPlaybackQuality(); if (q) ok('Quality now (' + (pl === YTV ? 'wallpaper' : 'clip') + ')', true, q + ' of ' + (pl.p.getAvailableQualityLevels() || []).join(',')) } catch(e){} }
   } else ok('YouTube checks', false, 'play a YouTube track first, then run again')
+  if (TT.stats.length){ const a = [...TT.stats].sort((x, y) => x - y); ok('TikTok video start', true, 'median ' + a[a.length >> 1] + ' ms over the last ' + a.length + ' videos (from the swipe to the first frame)') }
   let d = $('#diag'); if (!d){ d = document.createElement('div'); d.id = 'diag'; d.className = 'glass'; d.onclick = () => d.remove(); document.body.appendChild(d) }
   d.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99;max-width:70rem;padding:2rem 2.4rem;font:500 1.3rem/1.7 system-ui;white-space:pre-wrap;word-break:break-all;pointer-events:auto;border-radius:1.4rem';
   d.textContent = 'Self-test (click to close)\n\n' + L.join('\n');

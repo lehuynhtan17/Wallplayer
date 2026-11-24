@@ -431,21 +431,27 @@ async fn suggest(app: AppHandle, id: String) -> Result<Suggest, String> {
     Ok(Suggest { tracks, personal })
 }
 
-/// TikTok channel: open For You ("foryou") or a search ("search") in the off-screen TikTok page.
+/// TikTok channel: open For You ("foryou"), Following, Friends or a search ("search") in the off-screen TikTok page.
 #[tauri::command]
 async fn tiktok_feed(app: AppHandle, mode: String, query: String) -> Result<(), String> {
     tiktok::feed(&app, &mode, &query)
 }
 
-/// The TikTok videos collected since the last call.
+/// The TikTok videos collected since the last call (page "user": from the profile page).
 #[tauri::command]
-async fn tiktok_take(app: AppHandle) -> Result<tiktok::Take, String> {
-    tiktok::take(&app).await
+async fn tiktok_take(app: AppHandle, page: Option<String>) -> Result<tiktok::Take, String> {
+    tiktok::take(&app, page.as_deref()).await
 }
 
 #[tauri::command]
-async fn tiktok_more(app: AppHandle) {
-    tiktok::more(&app)
+async fn tiktok_more(app: AppHandle, page: Option<String>) {
+    tiktok::more(&app, page.as_deref())
+}
+
+/// Open someone's TikTok profile in its off-screen page ("" empties it).
+#[tauri::command]
+async fn tiktok_user(app: AppHandle, name: String) -> Result<(), String> {
+    tiktok::user(&app, &name)
 }
 
 #[tauri::command]
@@ -467,8 +473,9 @@ async fn tiktok_comments(app: AppHandle, author: String, id: String) -> Result<V
 
 /// Show the TikTok page (to answer TikTok's check), or put it away.
 #[tauri::command]
-async fn tiktok_show(app: AppHandle, on: bool, video: Option<bool>) {
-    tiktok::show(&app, on, video.unwrap_or(false))
+async fn tiktok_show(app: AppHandle, on: bool, video: Option<bool>, page: Option<String>) {
+    let p = page.unwrap_or_else(|| if video.unwrap_or(false) { "video".into() } else { String::new() });
+    tiktok::show(&app, on, &p)
 }
 
 /// YouTube's Mix for one song ("Danh sách kết hợp"), or its next part when `cont` is given.
@@ -857,6 +864,7 @@ fn main() {
             tiktok_feed,
             tiktok_take,
             tiktok_more,
+            tiktok_user,
             tiktok_stop,
             tiktok_show,
             tiktok_act,

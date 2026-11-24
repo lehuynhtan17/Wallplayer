@@ -185,6 +185,17 @@ TIKTOK
 - "Dành cho bạn" là bảng tin TikTok của bạn khi đã đăng nhập TikTok (Cài đặt → Tài khoản → TikTok), chưa
   đăng nhập thì là bảng tin chung. Gõ vào ô search rồi Enter để xem video theo từ khóa; nút "Dành cho bạn"
   quay lại bảng tin. "Tiếp theo" bên phải hiện 3 video kế tiếp; chú thích dài có nút "Xem thêm" để đọc hết.
+- "Đã follow" và "Bạn bè" cạnh "Dành cho bạn": video từ các tài khoản bạn follow và từ bạn bè (cần đăng nhập
+  TikTok trước).
+- Trang cá nhân: bấm vào ảnh hoặc tên tác giả cạnh video. Trang cá nhân mở thay chỗ "Tiếp theo" (màn hình dọc
+  thì trồi lên che phần dưới video): ảnh, tên, số đã follow, follower, lượt thích, tiểu sử và các video của
+  họ. Bấm vào một video để xem các video của họ từ video đó; nút "@tên" mở lại trang cá nhân, còn "Dành cho
+  bạn" (hoặc tab bạn đang xem trước đó) đưa bạn về đúng video lúc nãy. Bấm ✕ để đóng trang cá nhân.
+- Tải video: trong lúc bạn xem, 2 video kế tiếp được tải sẵn ở chỗ khuất (lần lượt từng video) và tải trước
+  vài giây đầu trong im lặng, nên lướt là video sau chạy ngay; video vừa xem được giữ lại để quay lại, video
+  TikTok không phát được thì tự bỏ qua. "Dành cho bạn" mở ngay bằng các video lần trước bạn chưa xem tới,
+  trong lúc TikTok gửi video mới. Cài đặt → Chung → Tự kiểm tra cho biết video TikTok khởi động nhanh cỡ nào
+  trên máy bạn. Chế độ tiết kiệm pin chỉ tải sẵn 1 video.
 - Cách hoạt động: TikTok không mở bảng tin cho app khác, nên Wallplayer mở chính trang TikTok ở chỗ khuất (với
   phiên đăng nhập TikTok của bạn) để đọc danh sách video, và phát từng video bằng trình phát nhúng chính thức
   của TikTok. Nếu TikTok đòi xác minh, bấm "Mở TikTok", làm theo, rồi bấm "Xong".
@@ -271,6 +282,8 @@ Khác với Windows:
   (macOS hỏi một lần có cho Wallplayer điều khiển không). Phím tắt tìm nhạc là ⇧⌘Space, vì macOS dùng ⌃⌥Space để đổi bàn phím
   (Tiếng Việt ⇄ English). Viền sáng chạy theo hiệu ứng riêng: macOS không cho app nghe âm thanh hệ thống
   nếu chưa cấp quyền Ghi màn hình.
+- TikTok (Đã follow, Bạn bè, trang cá nhân, tải sẵn video) chạy giống Windows; riêng các trang TikTok ẩn trên
+  Linux và macOS vẫn tải hình (Windows bỏ qua hình để dành đường truyền).
 - Không có trên Linux / macOS: "Ưu tiên cao" (High priority, tính năng của Windows).
 
 GIỚI HẠN ĐÃ BIẾT
