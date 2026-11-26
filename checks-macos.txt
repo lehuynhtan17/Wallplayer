@@ -1,0 +1,8 @@
+PASS  app is running
+PASS  skin window is on screen
+PASS  skin is just above the desktop icons, under every app
+PASS  skin covers the screen (1024x768)
+PASS  the app window is above the skin
+PASS  Shift+Command+Space raises the skin above the apps
+PASS  skin back just above the desktop icons
+PASS  app still running at the end

@@ -1,0 +1,14 @@
+display 1024x768
+levels desktop=-2147483623 desktopIcon=-2147483603 floating=3
+     layer=2147483630 size=10x18 at=857,3 owner=Window Server
+MINE layer=25 size=34x24 at=771,0 owner=Wallplayer
+     layer=25 size=34x24 at=836,0 owner=Control Center
+     layer=25 size=154x24 at=870,0 owner=Control Center
+     layer=25 size=31x24 at=805,0 owner=Spotlight
+     layer=24 size=1024x24 at=0,0 owner=Window Server
+     layer=20 size=1024x768 at=0,0 owner=Dock
+MINE layer=3 size=1024x768 at=0,0 owner=Wallplayer
+     layer=0 size=198x350 at=62,352 owner=Calculator
+     layer=-2147483603 size=1024x768 at=0,0 owner=Finder
+     layer=-2147483624 size=1024x768 at=0,0 owner=Dock
+     layer=-2147483626 size=1024x768 at=0,0 owner=Window Server

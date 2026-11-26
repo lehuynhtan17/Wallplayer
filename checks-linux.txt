@@ -1,0 +1,19 @@
+PASS  app is running
+PASS  skin window exists
+PASS  skin is a desktop-layer window
+PASS  skin covers the screen (1920x1080)
+PASS  skin is on every workspace
+PASS  sound analysis (parec) runs
+PASS  skin stays on Show desktop
+PASS  Ctrl+Alt+Space raises the skin
+  skin: _NET_WM_WINDOW_TYPE(ATOM) = _NET_WM_WINDOW_TYPE_NORMAL _NET_WM_STATE(ATOM) = _NET_WM_STATE_SKIP_TASKBAR, _NET_WM_STATE_SKIP_PAGER, _NET_WM_STATE_ABOVE 
+  active: _NET_ACTIVE_WINDOW(WINDOW): window id # 0xc0000e
+PASS  skin back in the desktop layer
+  player bar offset: 0px
+PASS  Pause / Next did not touch the other app
+PASS  system volume left alone
+PASS  skin fits the left monitor (960 wide)
+PASS  a copy opened on the right monitor
+PASS  skin back to 1920 wide
+PASS  Ctrl+Alt+Space right after clicking the skin raises it
+PASS  app still running at the end
