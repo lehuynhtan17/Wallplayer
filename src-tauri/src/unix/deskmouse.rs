@@ -176,7 +176,7 @@ mod linux {
 #[cfg(target_os = "macos")]
 mod mac {
     use std::ptr::NonNull;
-    use std::sync::atomic::Ordering;
+    use super::FORWARD;
     use std::sync::Mutex;
     use std::time::{Duration, Instant};
 
