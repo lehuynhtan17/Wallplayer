@@ -120,7 +120,7 @@ cũng được), nội dung bên phải. Esc hoặc bấm ra ngoài để đóng
 - Hiệu năng: xem mục NHẸ MÁY.
 - Tài khoản: xem mục TÀI KHOẢN.
 - Chung: Ngôn ngữ, Ẩn icon desktop, Phím tắt (Tìm nhạc từ mọi nơi, Hiện / ẩn icon desktop), Cập nhật,
-  Chính sách quyền riêng tư, Tự kiểm tra, Thoát.
+  Ủng hộ (đánh sao Wallplayer trên GitHub), Chính sách quyền riêng tư, Tự kiểm tra, Thoát.
 
 NHẸ MÁY (Cài đặt → Hiệu năng)
 - Dừng nhạc: viền sáng và nền chậm dần rồi đứng yên, app thôi vẽ hẳn. Phát lại là chạy tiếp ngay.
@@ -162,6 +162,20 @@ VIỀN SÁNG, ICON KHAY, MV
 - Wallplayer chỉ hiện những gì bạn phát từ Wallplayer. Video trên trình duyệt (Facebook, YouTube…), game, hay nhạc
   bạn tự mở ở app khác đều bị bỏ qua: không bìa, không lyrics, không MV, không vào History. Wallplayer cũng không
   tự dừng app khác: hai bên cứ phát.
+
+KIỂM TRA CỦA TIKTOK
+- Đôi khi TikTok đòi kiểm tra nhanh (kéo mảnh ghép) trước khi cho xem video. Wallplayer mở một cửa sổ nhỏ chỉ có mảnh ghép
+  (nếu không thấy mảnh ghép thì hiện cả trang TikTok): bạn giải ở đó. Cửa sổ tự đóng khi hết yêu cầu, hoặc bấm X để đóng. Xong Wallplayer tự tải lại video.
+
+ĐÁNH SAO TRÊN GITHUB (Cài đặt → Chung → Ủng hộ)
+- Bấm "Đăng nhập và đánh sao": một cửa sổ GitHub mở ra, bạn đăng nhập một lần (Wallplayer không thấy mật khẩu,
+  phiên đăng nhập chỉ nằm trong app), rồi Wallplayer đánh sao repo giúp tài khoản của bạn. Không cần tự mở repo.
+  Từ lần sau nút là "Đánh sao trên GitHub"; đã đánh sao thì app báo "Bạn đã đánh sao". "Đăng xuất GitHub" xoá phiên đăng nhập.
+- Dùng được 3 ngày mà chưa đánh sao thì hiện một thẻ nhỏ hỏi một lần; bấm "Để sau" thì 30 ngày sau hỏi lại.
+  Đã đăng nhập GitHub trong app và đã đánh sao thì không bao giờ hỏi.
+- "Chia sẻ cho bạn bè → Sao chép link" chép link GitHub của Wallplayer để gửi app cho bạn bè.
+- Chạy giống nhau trên Windows, Linux và macOS. Nếu GitHub đổi trang và app không tìm thấy nút, app báo rõ
+  và đưa nút "Mở trên GitHub".
 
 CẬP NHẬT (không cần file cài)
 - Mỗi lần mở, Wallplayer kiểm tra ngầm một lần, không hiện gì lên màn hình. Có bản mới thì mục trong menu

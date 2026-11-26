@@ -3,6 +3,17 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.22
+
+### New
+- Star Wallplayer on GitHub without opening the repo: Settings → General → Support → "Sign in & star". You sign in to GitHub once in a small window (Wallplayer never sees your password; the session stays in the app), and Wallplayer stars the repo for your account. Once starred, Settings says so.
+- "Copy link" next to it (Settings → General → Support → Share with friends) copies Wallplayer's GitHub link, to send the app to a friend.
+- A small card asks for the star once after 3 days of use if the repo is not starred yet, then again every 30 days if you pressed "Not now". It never asks anyone who already starred it.
+
+### Fixed
+- TikTok: when TikTok asked for its quick check (the puzzle), Wallplayer showed a bare TikTok window with no title bar, no ✕ and no taskbar button, so it could not be closed. It is now a small window that shows only the puzzle (if no puzzle appears within 12 seconds it shows the whole page, bigger), with a title bar and ✕, it closes by itself once the check is answered or after 3 minutes, and leaving the TikTok channel puts it away. The skin reloads the list by itself afterwards.
+- TikTok pages can no longer open extra windows (pop-ups, "open in the app" links) or go anywhere but TikTok's own sites. The GitHub star page is limited to GitHub the same way.
+
 ## 1.0.21
 
 ### Changed

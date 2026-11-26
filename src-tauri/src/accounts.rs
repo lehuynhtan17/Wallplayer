@@ -35,6 +35,7 @@ static SP_PENDING: Mutex<Option<(String, String, String)>> = Mutex::new(None);
 const YT_COOKIES: &[&str] = &["SAPISID", "__Secure-3PAPISID", "LOGIN_INFO", "__Secure-1PSID"];
 const SC_COOKIES: &[&str] = &["oauth_token"];
 const TT_COOKIES: &[&str] = &["sessionid", "sessionid_ss"];
+const GH_COOKIES: &[&str] = &["user_session"];
 
 #[derive(Serialize, Clone)]
 pub struct Accounts {
@@ -42,6 +43,7 @@ pub struct Accounts {
     pub soundcloud: bool,
     pub spotify: bool,
     pub tiktok: bool,
+    pub github: bool,
     pub spotify_client_id: String,
     pub redirect_uri: String,
 }
@@ -50,7 +52,7 @@ fn enc(s: &str) -> String {
     urlencoding::encode(s).into_owned()
 }
 
-fn has_cookie(app: &AppHandle, url: &str, names: &[&str]) -> bool {
+pub(crate) fn has_cookie(app: &AppHandle, url: &str, names: &[&str]) -> bool {
     let Some(w) = app.get_webview_window("main") else { return false };
     let Ok(u) = Url::parse(url) else { return false };
     w.cookies_for_url(u)
@@ -96,6 +98,7 @@ pub async fn status(app: &AppHandle) -> Accounts {
     let youtube = has_cookie(app, "https://www.youtube.com", YT_COOKIES);
     let soundcloud = has_cookie(app, "https://soundcloud.com", SC_COOKIES);
     let tiktok = has_cookie(app, "https://www.tiktok.com", TT_COOKIES);
+    let github = has_cookie(app, "https://github.com", GH_COOKIES);
     let (cid, refresh) = {
         let st = app.state::<crate::AppState>();
         let s = st.settings.lock().unwrap();
@@ -106,6 +109,7 @@ pub async fn status(app: &AppHandle) -> Accounts {
         soundcloud,
         spotify: refresh,
         tiktok,
+        github,
         spotify_client_id: cid,
         redirect_uri: SP_REDIRECT.into(),
     }
@@ -186,6 +190,14 @@ pub async fn login(app: AppHandle, platform: String) -> Result<(), String> {
                 TT_COOKIES,
                 "TikTok",
             ),
+            "github" => (
+                "login-github",
+                "https://github.com/login?return_to=%2Flehuynhtan17%2FWallplayer",
+                "Sign in — GitHub",
+                "https://github.com",
+                GH_COOKIES,
+                "GitHub",
+            ),
             _ => return Err("unknown platform".into()),
         };
     crate::end_peek(&app);
@@ -237,6 +249,11 @@ pub async fn logout(app: AppHandle, platform: String) -> Result<(), String> {
         }
         "tiktok" => {
             for u in ["https://www.tiktok.com", "https://tiktok.com", "https://www.tiktokv.com"] {
+                delete_cookies(&app, u);
+            }
+        }
+        "github" => {
+            for u in ["https://github.com", "https://api.github.com"] {
                 delete_cookies(&app, u);
             }
         }

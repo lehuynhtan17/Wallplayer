@@ -24,6 +24,7 @@ one exception below, which you can turn off.
 | Synced lyrics, and word-by-word timing (Settings → Lyrics → *Find lyrics online*, on by default) | LRCLIB, NetEase Music, Genius | Title, artist and length of the song playing |
 | Second-language lyrics | Google Translate | The lyric lines being translated |
 | Fonts in the editor | Google Fonts | A request for the font files |
+| Star on GitHub (Settings → General → Support, or the reminder card) | GitHub (`github.com`, in a window you sign in to yourself; the sign-in cookie stays in Wallplayer's local profile) | What GitHub's site receives when you sign in and press Star: your GitHub session. Nothing is sent when you don't press it. The reminder only counts days of use on your PC |
 | Updating | GitHub | Downloads the release zip, only after you choose *Update* |
 
 Each of these services has its own privacy policy, which applies to what you send them.

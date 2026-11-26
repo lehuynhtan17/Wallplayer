@@ -45,6 +45,16 @@ pub struct Settings {
     /// a version the user chose to skip: the tray menu does not offer it
     #[serde(default)]
     pub skip_version: String,
+    /// "Star on GitHub" reminder (github.rs): days the app was used, the last day counted, when the card was
+    /// last shown (unix seconds), and whether the repo is starred
+    #[serde(default)]
+    pub star_days: u32,
+    #[serde(default)]
+    pub star_last_day: u64,
+    #[serde(default)]
+    pub star_asked: u64,
+    #[serde(default)]
+    pub star_done: bool,
 }
 
 pub fn default_search_key() -> String {

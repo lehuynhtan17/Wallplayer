@@ -6,13 +6,14 @@
 //! player (www.tiktok.com/player/v1/<id>). The page stays muted and paused; it is never closed at
 //! runtime (closing a busy WebView2 window can take the shared engine down), only emptied.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
+use tauri::webview::NewWindowResponse;
+use tauri::{AppHandle, Emitter, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 #[cfg(windows)]
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     ICoreWebView2_2, COREWEBVIEW2_WEB_RESOURCE_CONTEXT, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_IMAGE, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_MEDIA,
@@ -35,6 +36,8 @@ const OFF: f64 = -32000.0;
 /// The hidden pages load no videos or pictures (only TikTok's lists), so the video you watch gets the
 /// whole connection; off while a page is on screen for TikTok's check (its puzzle is a picture).
 static QUIET: AtomicBool = AtomicBool::new(true);
+/// Counts every time a page is put on screen or away, so a watcher knows when it is out of date.
+static SHOWN: AtomicU64 = AtomicU64::new(0);
 
 /// One TikTok video, as the skin needs it.
 #[derive(Serialize, Clone, Debug, Default)]
@@ -105,6 +108,14 @@ pub struct Take {
 /// Wallplayer take the list and ask for more (by scrolling the page).
 const HOOK: &str = r#"(() => {
   if (window.top !== window || !/(^|\.)tiktok\.com$/.test(location.hostname) || window.__wptt) return;
+  // "puzzle only": while the page is shown for TikTok's check (the app sets window.name), everything but the check is
+  // hidden. If no check shows up within 12 s the whole page comes back (see fullView), so nothing is ever blank.
+  if (window.name === 'wp-check'){
+    const st = document.createElement('style'); st.id = 'wp-focus';
+    st.textContent = 'html,body{background:#1c1c1e !important} body *{visibility:hidden !important} [id*="captcha" i],[class*="captcha" i],[id*="captcha" i] *,[class*="captcha" i] *{visibility:visible !important}';
+    (document.head || document.documentElement).appendChild(st);
+    setTimeout(() => { if (!document.querySelector('[id*="captcha" i],[class*="captcha" i]')){ st.remove(); window.__wpFull = true } }, 12000);
+  }
   const Q = [], seen = new Set(), C = []; let more = true, res = null, prof = null;
   // video lists of every page (For You, Following, Friends, a profile: …/item_list/; a search: …/full/), comments,
   // like / save answers, a profile's details
@@ -177,6 +188,7 @@ const HOOK: &str = r#"(() => {
     act(kind, id){ const b = this.find(kind, id); if (!b) return false;
       res = null; this.before = b.outerHTML; this.b = b; b.click(); return true },
     check(){ return [...document.querySelectorAll('[id*="captcha" i],[class*="captcha" i]')].some(e => e.offsetWidth > 150 && e.offsetHeight > 120) },
+    fullView(){ return !!window.__wpFull },
     acted(){ if (res) return {done: true, ok: res.ok}; const b = this.b; return {done: false, changed: !!(b && b.isConnected && b.outerHTML !== this.before)} },
     openComments(id){ if (C.some(c => c.item === id)) return true; const b = this.find('comment', id); if (b) b.click();
       // the side panel may open on "You may like": pick its Comments tab
@@ -245,17 +257,70 @@ fn quiet(w: &WebviewWindow) {
 }
 
 /// Out of sight and out of Alt+Tab, but still "on screen" for TikTok's page so it keeps loading.
-fn tuck(w: &WebviewWindow) {
+pub(crate) fn tuck(w: &WebviewWindow) {
+    let _ = w.set_always_on_top(false);
+    let _ = w.set_decorations(false);
     let _ = w.set_position(tauri::LogicalPosition::new(OFF, OFF));
-    #[cfg(not(windows))]
     let _ = w.set_skip_taskbar(true);
     #[cfg(windows)]
+    tool_window(w, true);
+}
+
+/// Windows: a "tool window" has no taskbar button and no Alt+Tab entry.
+#[cfg(windows)]
+fn tool_window(w: &WebviewWindow, on: bool) {
     if let Ok(h) = w.hwnd() {
         unsafe {
             let hwnd = HWND(h.0 as *mut core::ffi::c_void);
             let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | WS_EX_TOOLWINDOW.0 as isize);
+            let bit = WS_EX_TOOLWINDOW.0 as isize;
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, if on { ex | bit } else { ex & !bit });
         }
+    }
+}
+
+/// Bring a page on screen as a real window (title bar, ✕, taskbar button, on top) so the person can answer
+/// TikTok's check and close it. (Before 1.0.22 it was a bare, borderless window with nothing to close.)
+fn present(w: &WebviewWindow) {
+    #[cfg(windows)]
+    tool_window(w, false);
+    let _ = w.set_decorations(true);
+    let _ = w.set_skip_taskbar(false);
+    let _ = w.set_title("TikTok · quick check");
+    let _ = w.set_size(tauri::LogicalSize::new(480.0, 640.0)); // the check alone; see HOOK "puzzle only"
+    let _ = w.center();
+    let _ = w.set_always_on_top(true);
+    let _ = w.show();
+    let _ = w.set_focus();
+}
+
+/// Which page a window is, as the skin names it.
+fn name_of(label: &str) -> &'static str {
+    match label { ACT => "video", USER => "user", _ => "feed" }
+}
+
+/// Put a page away again (✕, Done, the check was answered, or too long): back out of sight, quiet again,
+/// and tell the skin so it can try again.
+fn away(w: &WebviewWindow) {
+    SHOWN.fetch_add(1, Ordering::SeqCst);
+    QUIET.store(true, Ordering::Relaxed);
+    let _ = w.set_title("Wallplayer · TikTok");
+    let _ = w.eval("window.name = ''");
+    tuck(w);
+    let _ = w.app_handle().emit("tiktok-check-done", name_of(w.label()));
+}
+
+/// Every window of ours that is not the main page may only go to TikTok's own sites: a link, a pop-up or an
+/// "open in the app" redirect must never open a second window or leave TikTok.
+fn tiktok_host(u: &Url) -> bool {
+    match u.scheme() {
+        "about" => true,
+        "http" | "https" => u.host_str().map_or(false, |h| {
+            ["tiktok.com", "tiktokv.com", "tiktokcdn.com", "tiktokcdn-us.com", "tiktokw.us", "byteoversea.com", "ibytedtos.com", "musical.ly", "ttwstatic.com"]
+                .iter()
+                .any(|d| h == *d || h.ends_with(&format!(".{d}")))
+        }),
+        _ => false,
     }
 }
 
@@ -292,6 +357,8 @@ fn page(app: &AppHandle, label: &str, url: &str) -> Result<(), String> {
         .user_agent(crate::accounts::UA)
         .additional_browser_args(crate::accounts::BROWSER_ARGS)
         .initialization_script(HOOK)
+        .on_new_window(|_, _| NewWindowResponse::Deny)
+        .on_navigation(tiktok_host)
         .build()
         .map_err(|e| e.to_string())?;
     tuck(&w);
@@ -300,8 +367,7 @@ fn page(app: &AppHandle, label: &str, url: &str) -> Result<(), String> {
     w.on_window_event(move |e| {
         if let WindowEvent::CloseRequested { api, .. } = e {
             api.prevent_close();
-            QUIET.store(true, Ordering::Relaxed);
-            tuck(&w2);
+            away(&w2);
         }
     });
     crate::guard::watch(&w, false);
@@ -310,6 +376,8 @@ fn page(app: &AppHandle, label: &str, url: &str) -> Result<(), String> {
 
 /// Leaving the TikTok channel: empty the page (it stays, for next time).
 pub fn stop(app: &AppHandle) {
+    SHOWN.fetch_add(1, Ordering::SeqCst); // a check window still on screen is put away too
+    QUIET.store(true, Ordering::Relaxed);
     for label in [LABEL, ACT, USER] {
         if let Some(w) = app.get_webview_window(label) {
             tuck(&w);
@@ -330,17 +398,58 @@ pub fn more(app: &AppHandle, page: Option<&str>) {
 
 /// Bring a TikTok page on screen so you can answer TikTok's check yourself ("video": the page of the
 /// video you act on; "user": the profile page; otherwise the feed page); `false` puts it away again.
+/// It is a normal window you can close, it closes itself once the check is gone, and after 3 minutes.
 pub fn show(app: &AppHandle, on: bool, page: &str) {
-    let Some(w) = app.get_webview_window(match page { "video" => ACT, "user" => USER, _ => LABEL }) else { return };
-    if on {
-        QUIET.store(false, Ordering::Relaxed);
-        let _ = w.eval("location.reload()");
-        let _ = w.center();
-        let _ = w.set_focus();
-    } else {
-        QUIET.store(true, Ordering::Relaxed);
-        tuck(&w);
+    let label = match page { "video" => ACT, "user" => USER, _ => LABEL };
+    let Some(w) = app.get_webview_window(label) else { return };
+    if !on {
+        away(&w);
+        return;
     }
+    for other in [LABEL, ACT, USER] {
+        if other != label {
+            if let Some(o) = app.get_webview_window(other) {
+                tuck(&o);
+            }
+        }
+    }
+    QUIET.store(false, Ordering::Relaxed);
+    let _ = w.eval("window.name = 'wp-check'; location.reload()");
+    present(&w);
+    let gen = SHOWN.fetch_add(1, Ordering::SeqCst) + 1;
+    let app2 = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let start = std::time::Instant::now();
+        let mut clear = 0;
+        let mut big = false;
+        loop {
+            tokio::time::sleep(Duration::from_millis(1500)).await;
+            if SHOWN.load(Ordering::SeqCst) != gen {
+                return; // put away by someone else (✕, Done, another page)
+            }
+            let Some(w) = app2.get_webview_window(label) else { return };
+            if start.elapsed() > Duration::from_secs(180) {
+                crate::guard::log(&app2, "tiktok: the check window was put away after 3 minutes");
+                away(&w);
+                return;
+            }
+            if start.elapsed() < Duration::from_secs(6) {
+                continue; // the page is still reloading
+            }
+            if !big && run(&app2, label, "!!(window.__wptt && window.__wptt.fullView())").await.as_deref() == Some("true") {
+                // no puzzle appeared: show the whole page, big enough to read and use
+                big = true;
+                let _ = w.set_size(tauri::LogicalSize::new(1000.0, 760.0));
+                let _ = w.center();
+            }
+            let wants = run(&app2, label, "!!(window.__wptt && window.__wptt.check())").await;
+            clear = if wants.as_deref() == Some("false") { clear + 1 } else { 0 };
+            if clear >= 2 {
+                away(&w);
+                return;
+            }
+        }
+    });
 }
 
 fn https(v: &Value, k: &str) -> String {
@@ -420,7 +529,7 @@ fn parse(res: &str) -> Take {
 
 /// Run a script in one of the TikTok pages and get its result (JSON), or None.
 #[cfg(target_os = "linux")]
-async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
+pub(crate) async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
     use javascriptcore::ValueExt;
     use webkit2gtk::WebViewExt;
     let w = app.get_webview_window(label)?;
@@ -447,7 +556,7 @@ async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
 /// Run a script in one of the TikTok pages and get its result (JSON), or None. Every script here is
 /// an expression: WebKit returns its JSON text as a string.
 #[cfg(target_os = "macos")]
-async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
+pub(crate) async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
     use objc2::runtime::AnyObject;
     use objc2_foundation::{NSError, NSString};
     use objc2_web_kit::WKWebView;
@@ -478,7 +587,7 @@ async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
 }
 
 #[cfg(windows)]
-async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
+pub(crate) async fn run(app: &AppHandle, label: &str, js: &str) -> Option<String> {
     let w = app.get_webview_window(label)?;
     let (tx, rx) = tokio::sync::oneshot::channel::<String>();
     let tx = Arc::new(Mutex::new(Some(tx)));
@@ -530,6 +639,8 @@ async fn item(app: &AppHandle, author: &str, id: &str) -> Result<(), String> {
                 .user_agent(crate::accounts::UA)
                 .additional_browser_args(crate::accounts::BROWSER_ARGS)
                 .initialization_script(HOOK)
+                .on_new_window(|_, _| NewWindowResponse::Deny)
+                .on_navigation(tiktok_host)
                 .build()
                 .map_err(|e| e.to_string())?;
             tuck(&w);
@@ -538,8 +649,7 @@ async fn item(app: &AppHandle, author: &str, id: &str) -> Result<(), String> {
             w.on_window_event(move |e| {
                 if let WindowEvent::CloseRequested { api, .. } = e {
                     api.prevent_close();
-                    QUIET.store(true, Ordering::Relaxed);
-                    tuck(&w2);
+                    away(&w2);
                 }
             });
             crate::guard::watch(&w, false);

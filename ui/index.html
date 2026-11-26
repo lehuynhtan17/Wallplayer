@@ -64,7 +64,7 @@ img{display:block}
 .rc .ra .csave .ico{width:1.35rem;height:1.35rem}
 /* mirror (another monitor): same scene, no player bar or menus; the playlist and the cover flow can be
    clicked (the main window plays what you pick) */
-#app.mirror #dock,#app.mirror .menu,#app.mirror #toast,#app.mirror #upPill,#app.mirror #upCard,#app.mirror #dropHint,#app.mirror #flowStatus,
+#app.mirror #dock,#app.mirror .menu,#app.mirror #toast,#app.mirror #upPill,#app.mirror #upCard,#app.mirror #starCard,#app.mirror #dropHint,#app.mirror #flowStatus,
 #app.mirror #editSheet,#app.mirror #restoreBtn,#app.mirror #flow .open{display:none!important}
 #app.mirror,#app.mirror :not(#flowWrap,#flowWrap *,#qlist,#qlist *){pointer-events:none!important}
 #app.mirror #flowWrap,#app.mirror #qlist{pointer-events:auto}
@@ -660,6 +660,9 @@ button.bgv:hover{background:rgba(255,255,255,.08)}
 #upCard .upNotes{overflow:auto;max-height:42vh;padding:.8rem 1rem;border-radius:1rem;background:rgba(255,255,255,.06);font-size:1.15rem;line-height:1.5}
 #upCard .upNotes h4{margin:.6rem 0 .2rem;font-size:1.2rem}#upCard .upNotes p{margin:.25rem 0}#upCard .upNotes li{margin:.15rem 0 .15rem 1.1rem}
 #upCard .chips{justify-content:flex-end}
+#starCard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(34rem,90vw);display:none;flex-direction:column;gap:.7rem;padding:1.6rem 1.8rem;border-radius:1.6rem;z-index:40}
+#starCard.on{display:flex}#starCard h3{margin:0;font-size:1.6rem;font-weight:700}#starCard p{margin:0;font-size:1.2rem;line-height:1.5;opacity:.85}
+#starCard .chips{justify-content:flex-end}#starCard .lnote{opacity:.8}
 #dropHint{position:absolute;inset:2rem;border:.2rem dashed rgba(255,255,255,.5);border-radius:2.4rem;display:grid;place-items:center;font-size:2rem;font-weight:700;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.25s;z-index:40}
 #app.drag #dropHint{opacity:1}
 .pi{display:block;border-radius:.55rem}
@@ -938,6 +941,7 @@ button.tta:hover b{text-decoration:underline;text-underline-offset:.25rem}
   <div id="toast" class="glass"></div>
   <div id="upPill" class="glass"><span id="upMsg"></span><button class="chip on" id="upGo"></button><button class="chip" id="upX" title="Hide">✕</button></div>
   <div id="upCard" class="glass"></div>
+  <div id="starCard" class="glass"></div>
   <div id="dropHint">Drop songs or a music folder to play them · a picture or video to make it the wallpaper</div>
   <input type="file" id="wpFile" accept="image/*,video/*" hidden>
 </div>
@@ -1622,7 +1626,7 @@ const SET_TABS = [
   null,
   ['perf', 'Performance', '#ffd23d|#e8a90c', 'power battery saver energy pin tiết kiệm năng lượng startup priority khởi động ưu tiên'],
   ['acc', 'Accounts', '#5aa8ff|#2a6fdc', 'youtube soundcloud spotify sign in đăng nhập tài khoản'],
-  ['general', 'General', '#a3a3aa|#6e6e76', 'language english vietnamese updates shortcut quit privacy desktop icons ngôn ngữ tiếng việt cập nhật phím tắt thoát']
+  ['general', 'General', '#a3a3aa|#6e6e76', 'language english vietnamese updates shortcut quit privacy desktop icons ngôn ngữ tiếng việt cập nhật phím tắt thoát github star support rating đánh sao ủng hộ']
 ];
 const SET = {q: ''};
 const ISL_MODES = [['auto', 'Automatic'], ['button', 'Only when collapsed'], ['off', 'Off']];
@@ -1698,6 +1702,7 @@ function renderAppPop(){
           + (OS !== 'linux' ? row('Hide desktop icons', tg(S.ui.hide_icons !== false, 'data-sa="icons"'), 'On: the player takes the clicks. Off: the icons show and only they take the clicks') : '')) : '')
       + grp('Shortcuts', row('Search from anywhere', keyRec('search')) + (T && OS !== 'linux' ? row('Show / hide desktop icons', keyRec('icons')) : ''))
       + grp('Updates', row('Check when Wallplayer starts', tg(UP.auto, 'data-t="autoup"')) + `<div class="sr col"><span class="sl"><small id="upNow">${upText()}</small></span><div class="chips" id="upBtns">${upBtns()}</div></div>`)
+      + (T ? grp('Support', `<div class="sr col"><span class="sl"><b>Star Wallplayer on GitHub</b><small id="ghNow">${ghText()}</small></span><div class="chips" id="ghBtns">${ghBtns()}</div></div>` + row('Share with friends', `<button class="abtn" data-gh="copy">Copy link</button>`, 'Copies the GitHub link to Wallplayer')) : '')
       + grp('', row('Privacy policy', `<button class="abtn" id="privBtn">Open</button>`) + row('Self-test', `<button class="abtn" id="selfTestBtn">Run (Ctrl+Shift+D)</button>`) + (T ? row('Quit Wallplayer', `<button class="abtn warn" data-sa="quit">Quit</button>`) : ''));
   }
   const nav = SET_TABS.filter(x => !x || x[0] !== 'island' || ISLAND_ENABLED).map(x => x ? `<button class="sn ${x[0] === tab ? 'on' : ''}" data-tab="${x[0]}" data-kw="${esc(plainText(x[1] + ' ' + x[3] + ' ' + ((window.WP_VI && WP_VI.dict[x[1]]) || '')))}">${setTile(x[0], x[2])}<span>${x[1]}</span></button>` : '<div class="snsep"></div>').join('');
@@ -1710,6 +1715,7 @@ function renderAppPop(){
   pop.querySelector('.sbody').scrollTop = keep;
   if (tab === 'acc'){ const acc = $('#accMenu'); acc.classList.add('inset'); $('#accSlot').appendChild(acc); renderAccounts(); refreshAccounts() }
   if (tab === 'wall' || tab === 'amb') setTimeout(loadMonitors, 0);
+  if ($('#ghBtns')) ghRefresh();
 }
 // lower case, no accents: "loi" finds "Lời bài hát"
 const plainText = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
@@ -2564,7 +2570,7 @@ $('#ttStage').addEventListener('click', e => {
   else if (a === 'more'){ TT.capOpen = !TT.capOpen; renderTT() }
   else if (a === 'ext') openExternal(c ? `https://www.tiktok.com/@${c.author}/video/${c.id}` : 'https://www.tiktok.com/foryou');
   else if (a === 'show'){ invoke('tiktok_show', {on: true}).catch(() => {}); toast('Answer TikTok there, then press Done') }
-  else if (a === 'done'){ invoke('tiktok_show', {on: false}).catch(() => {}); TT.reload() }
+  else if (a === 'done') invoke('tiktok_show', {on: false}).catch(() => {})   // the skin reloads when 'tiktok-check-done' arrives
   else if (a === 'retry') TT.reload();
 });
 $('#ttHit').addEventListener('click', e => { e.stopPropagation(); if (TT.list.length) togglePlay() });
@@ -3702,6 +3708,96 @@ async function initUpdates(){
   if (UP.just_updated){ showPill(); setTimeout(hidePill, 15000) }
 }
 
+/* ════════════════════ star on GitHub (github.rs) ════════════════════ */
+// GitHub only stars for a signed-in account: the user signs in once in an in-app window, then the app presses
+// GitHub's own Star button on an off-screen page. Settings → General → Support, and a small card that comes
+// back every 30 days while the repo is not starred (after 3 days of use).
+const GH = {signed: false, starred: null, busy: false, wait: false, err: '', t: 0, card: false};
+const GH_REPO = 'https://github.com/lehuynhtan17/Wallplayer';
+function ghText(){
+  if (GH.busy) return 'Talking to GitHub…';
+  if (GH.err) return GH.err;
+  if (GH.starred) return 'You starred Wallplayer ★ Thank you!';
+  return GH.signed ? "Not starred yet · it's free and it helps the project a lot" : 'Sign in to GitHub once, then star from here · no need to open the repo';
+}
+function ghBtns(){
+  const dis = GH.busy ? 'disabled' : '';
+  if (GH.starred) return GH.signed ? `<button class="chip" data-gh="out" ${dis}>Sign out of GitHub</button>` : '';
+  return `<button class="chip on" data-gh="star" ${dis}>${GH.signed ? '★ Star on GitHub' : '★ Sign in & star'}</button>`
+    + (GH.err ? '<button class="chip" data-gh="open">Open on GitHub</button>' : '')
+    + (GH.signed ? `<button class="chip" data-gh="out" ${dis}>Sign out of GitHub</button>` : '');
+}
+function ghCard(){
+  const c = $('#starCard'); if (!c) return;
+  if (!GH.card){ c.classList.remove('on'); return }
+  const line = GH.busy ? 'Talking to GitHub…' : GH.wait ? 'Sign in to GitHub in the window that opened' : GH.err;
+  c.innerHTML = `<h3>Enjoying Wallplayer?</h3><p>A ★ on GitHub helps other people find it. One click, right here.</p>`
+    + (line ? `<div class="lnote">${esc(line)}</div>` : '')
+    + `<div class="chips"><button class="chip" data-gh="later">Not now</button><button class="chip on" data-gh="star" ${GH.busy ? 'disabled' : ''}>${GH.signed ? '★ Star on GitHub' : '★ Sign in & star'}</button></div>`;
+  c.classList.add('on');
+}
+function ghPaint(){
+  const n = $('#ghNow'), b = $('#ghBtns'); if (n) n.textContent = ghText(); if (b) b.innerHTML = ghBtns();
+  ghCard();
+}
+async function ghRefresh(force){
+  if (!T || MIRROR) return;
+  if (!force && Date.now() - GH.t < 60000){ ghPaint(); return }   // the settings page repaints often: ask GitHub once a minute at most
+  GH.t = Date.now(); GH.busy = true; GH.err = ''; ghPaint();
+  try { const r = await invoke('github_star_state'); GH.signed = !!r.signed_in; GH.starred = r.starred } catch(e){}
+  GH.busy = false; ghPaint();
+}
+async function ghStar(){
+  if (GH.busy) return;
+  GH.busy = true; GH.err = ''; GH.wait = false; ghPaint();
+  try {
+    const ok = await invoke('github_star');
+    GH.signed = true; GH.starred = !!ok;
+    if (ok){ GH.card = false; toast('Thank you for the star ★') } else GH.err = "GitHub didn't confirm the star. Try again, or open the repo";
+  } catch(e){
+    if (String(e) === 'signin'){   // not signed in yet: the sign-in window opens; accounts-changed brings us back
+      GH.signed = false; GH.wait = true; GH.busy = false;
+      try { await invoke('account_login', {platform: 'github'}); toast('Sign in to GitHub in the window that opened') } catch(er){ GH.wait = false; GH.err = String(er) }
+      ghPaint(); return;
+    }
+    GH.err = String(e) === 'busy' ? '' : String(e);
+  }
+  GH.busy = false; GH.t = Date.now(); ghPaint();
+}
+// the sign-in window finished (or was closed): go on with the star if we were waiting for it
+function ghAfterSignIn(){
+  if (!GH.wait) return;
+  GH.wait = false;
+  if (S.acc && S.acc.github){ GH.signed = true; ghStar() } else ghPaint();
+}
+document.addEventListener('click', async e => {
+  const a = e.target.closest('[data-gh]'); if (!a) return;
+  e.stopPropagation();
+  const act = a.dataset.gh;
+  if (act === 'star') ghStar();
+  else if (act === 'open'){ openExternal(GH_REPO) }
+  else if (act === 'copy'){
+    let ok = false;
+    try { await navigator.clipboard.writeText(GH_REPO); ok = true } catch(er){}
+    if (!ok){ try { const t = document.createElement('textarea'); t.value = GH_REPO; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); ok = document.execCommand('copy'); t.remove() } catch(er){} }
+    toast(ok ? 'Link copied' : GH_REPO);
+  }
+  else if (act === 'later'){ GH.card = false; ghPaint() }
+  else if (act === 'out'){ try { await invoke('account_logout', {platform: 'github'}) } catch(er){} GH.signed = false; GH.starred = null; GH.err = ''; GH.t = Date.now(); ghPaint() }
+}, true);
+// startup: after a while, if it is time (3 days of use, then every 30 days) and the repo is not starred, show the card once
+async function initStar(){
+  if (!T || MIRROR) return;
+  const tryShow = async () => {
+    if (UP.card || TT.on || document.hidden){ setTimeout(tryShow, 3 * 60000); return }   // not on top of an update card or a TikTok video
+    let due = false; try { due = await invoke('github_star_due') } catch(e){}
+    if (!due) return;
+    try { const r = await invoke('account_status'); GH.signed = !!r.github } catch(e){}
+    GH.card = true; ghPaint(); invoke('github_star_asked').catch(() => {});
+  };
+  setTimeout(tryShow, 45000);
+}
+
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600) }
 
 /* ════════════════════ wiring ════════════════════ */
@@ -4151,12 +4247,15 @@ async function boot(){
     listen('tauri://drag-drop', e => { app.classList.remove('drag'); const ps = (e.payload && e.payload.paths) || []; if (ps.length) dropPaths(ps) });
     listen('bind-captured', e => { if (S.binding === 'search') applyKey('search', e.payload) });
     listen('icons-changed', e => iconsToast(e.payload));
+    // TikTok's check window was put away (✕, Done, answered, or too long): try again where it was needed
+    listen('tiktok-check-done', e => { if (!TT.on) return; const w = e.payload;
+      if (w === 'feed' && !(TT.page === 'user' && TT.prof)) TT.reload(); else if (w === 'user' && TT.prof) TT.reload(); else if (w === 'video') toast('Thanks · now try again') })
     invoke('get_search_key').then(k => { S.searchKey = k; if ($('#appPop').classList.contains('open')) renderAppPop() }).catch(() => {});
     invoke('get_icons_key').then(k => { S.iconsKey = k; if ($('#appPop').classList.contains('open')) renderAppPop() }).catch(() => {});
     listen('desk-mouse', e => deskMouse(e.payload));
     listen('peek-ended', () => app.classList.remove('searching'));
     listen('mode-changed', e => { S.ui = e.payload });
-    listen('accounts-changed', () => refreshAccounts());
+    listen('accounts-changed', async () => { await refreshAccounts(); ghAfterSignIn() });
     listen('monitor-changed', () => loadMonitors());
     listen('toast', e => toast(e.payload));
     listen('mirror-hello', () => mirrorSync(true));
@@ -4169,7 +4268,7 @@ async function boot(){
     setTrack(DEMO[1]); S.history = [];
   }
   if (T){ try { PW.set(await invoke('get_power')) } catch(e){} listen('power-state', e => PW.set(e.payload || {})) }
-  PW.prefs(); initUpdates();
+  PW.prefs(); initUpdates(); initStar();
   if (!MIRROR && S.platform === 'tiktok') TT.enter(false);
   loopRaf = requestAnimationFrame(frame);
 }

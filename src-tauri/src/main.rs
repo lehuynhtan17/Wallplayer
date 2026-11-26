@@ -10,6 +10,7 @@ mod boot;
 mod deskmouse;
 #[cfg_attr(not(windows), path = "unix/desktop.rs")]
 mod desktop;
+mod github;
 mod guard;
 mod island;
 mod library;
@@ -565,6 +566,30 @@ async fn browse_artist(id: String, title: String, art: String) -> Result<Vec<net
     net::ytm_artist(&id, &title, &art).await
 }
 
+/// Settings → Support: signed in to GitHub? did this account star Wallplayer?
+#[tauri::command]
+async fn github_star_state(app: AppHandle) -> github::Star {
+    github::state(&app).await
+}
+
+/// Time for the "Star on GitHub" card? (30 days after the last one, never once starred.)
+#[tauri::command]
+async fn github_star_due(app: AppHandle) -> bool {
+    github::check_due(&app).await
+}
+
+/// The card was shown: the next one comes in 30 days.
+#[tauri::command]
+fn github_star_asked(app: AppHandle) {
+    github::asked(&app);
+}
+
+/// Press GitHub's Star button for the signed-in account. Err("signin") = sign in first.
+#[tauri::command]
+async fn github_star(app: AppHandle) -> Result<bool, String> {
+    github::star(&app).await
+}
+
 #[tauri::command]
 async fn account_status(app: AppHandle) -> accounts::Accounts {
     accounts::status(&app).await
@@ -977,6 +1002,10 @@ fn main() {
             tiktok_comments,
             account_status,
             account_login,
+            github_star_state,
+            github_star_due,
+            github_star_asked,
+            github_star,
             account_logout,
             spotify_connect,
             spotify_play,
@@ -1017,6 +1046,7 @@ fn main() {
             let hide_on = s.hide_icons;
             desktop::set_target(&s.monitor);
             *app.state::<AppState>().settings.lock().unwrap() = s;
+            github::note_use(&handle);
 
             // window → desktop layer
             let win = app.get_webview_window("main").expect("main window");

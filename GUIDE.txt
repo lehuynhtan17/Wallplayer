@@ -153,7 +153,22 @@ Esc or a click outside closes it.
 - Accounts: see ACCOUNTS above.
 - General: Language (English or Tiếng Việt, also the tray menu; Wallplayer uses Vietnamese when Windows
   does), Hide desktop icons, Shortcuts (Search from anywhere, Show / hide desktop icons), Updates,
-  Privacy policy, Self-test, Quit.
+  Support (star Wallplayer on GitHub), Privacy policy, Self-test, Quit.
+
+TIKTOK'S CHECK
+- Sometimes TikTok wants a quick check (a puzzle) before it shows videos. Wallplayer then opens a small window
+  with just the puzzle (if none appears it shows the whole TikTok page instead): solve it there. The window closes by itself when the check is gone, or close it with the X. Wallplayer
+  reloads the videos afterwards.
+
+STAR ON GITHUB (Settings -> General -> Support)
+- Press "Sign in & star": a window opens on GitHub, you sign in once (Wallplayer never sees your password; the
+  session stays inside the app), and Wallplayer stars the repo for your account. No need to open the repo.
+  After that the button reads "Star on GitHub", and once starred it says so. "Sign out of GitHub" forgets the session.
+- After 3 days of use, if the repo is not starred yet, a small card asks once; if you press "Not now" it asks
+  again 30 days later. If you are signed in to GitHub in Wallplayer and already starred, it never asks.
+- "Share with friends -> Copy link" copies Wallplayer's GitHub link so you can send the app to a friend.
+- Works the same on Windows, Linux and macOS. If GitHub changes its page and the button can't be found,
+  Wallplayer says so and offers "Open on GitHub".
 
 UPDATES (no installer)
 - Each time it starts, Wallplayer quietly checks GitHub once. When there is a new version, the tray menu
