@@ -44,12 +44,22 @@ fn data_dir(app: &AppHandle) -> Option<PathBuf> {
 /// One line in wallplayer.log (kept small: the newest 200 lines).
 static APP: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
 
-/// Log from code that has no AppHandle at hand (the desktop watcher).
-#[cfg_attr(target_os = "macos", allow(dead_code))]
+/// Log from code that has no AppHandle at hand (the desktop watcher, a panic).
 pub fn note(line: &str) {
     if let Some(app) = APP.get() {
         log(app, line);
     }
+}
+
+/// A Rust fault anywhere ("panic") goes to wallplayer.log with where it happened, then Rust's usual
+/// handling runs (that task ends; the app goes on unless it was the main thread).
+pub fn panic_hook() {
+    let prev = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let th = std::thread::current();
+        note(&format!("panic in thread {}: {info}", th.name().unwrap_or("?")));
+        prev(info);
+    }));
 }
 
 pub fn log(app: &AppHandle, line: &str) {

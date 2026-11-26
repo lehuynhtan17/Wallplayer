@@ -1,6 +1,6 @@
 [package]
 name = "wallplayer"
-version = "1.0.20"
+version = "1.0.21"
 description = "Desktop wallpaper music player skin"
 edition = "2021"
 
@@ -80,4 +80,6 @@ opt-level = "s"
 lto = true
 codegen-units = 1
 strip = true
-panic = "abort"
+# panic = "unwind" (Rust's default): a fault in one background task (reading a song file's tags, a web
+# request…) ends that task only; with "abort" it closed the whole app. Each one is written to
+# wallplayer.log (guard::panic_hook).

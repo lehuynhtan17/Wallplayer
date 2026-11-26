@@ -2,8 +2,8 @@
 //!
 //! In Wallpaper mode the skin lives inside the shell's WorkerW, *behind* the desktop
 //! icons, so Windows never delivers mouse input to it: the icon layer is on top.
-//! A low-level mouse hook watches the cursor instead. When it is over empty desktop
-//! (not over an icon, not over another app) the position and buttons are sent to the
+//! A low-level mouse hook watches the cursor instead. With the desktop icons hidden ("Hide desktop
+//! icons", the default), when it is over empty desktop (not over another app) the position and buttons are sent to the
 //! page as `desk-mouse` events, which the page turns into hover / click / drag / wheel. Over another
 //! display the same goes to that display's mirror window (`desk-mouse-<its label>`), so its playlist,
 //! cover flow and TikTok grid can be clicked too.
@@ -186,6 +186,16 @@ unsafe extern "system" fn hook(code: i32, wp: WPARAM, lp: LPARAM) -> LRESULT {
         return CallNextHookEx(None, code, wp, lp);
     }
     if !desktop::is_wallpaper() {
+        return CallNextHookEx(None, code, wp, lp);
+    }
+    // desktop icons shown: they alone take the mouse (the player is just the moving wallpaper)
+    if !desktop::icons_hidden() {
+        let mut r = ROUTE.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(h) = r.hover.take() {
+            send_to("leave", 0, 0, 0, &h);
+        }
+        r.cap = None;
+        drop(r);
         return CallNextHookEx(None, code, wp, lp);
     }
     let pt = ms.pt;

@@ -97,6 +97,11 @@ fn apply_icons() {
     }
 }
 
+/// The desktop icons are hidden: the player takes the desktop's mouse (shown: only the icons do).
+pub fn icons_hidden() -> bool {
+    ICONS_HIDE.load(Ordering::Relaxed)
+}
+
 /// Hide / show every icon on the desktop (files, shortcuts, Recycle Bin).
 pub fn set_icons_hidden(hide: bool) {
     ICONS_HIDE.store(hide, Ordering::Relaxed);

@@ -6,9 +6,8 @@
 //!     Windows).
 //!   - macOS: an event monitor (the press also reaches the app under the mouse).
 //! * Wallpaper mode forwarding. Linux: not needed, the skin takes the mouse itself (see desktop.rs).
-//!   macOS: only when the skin sits under Finder's icons ("Hide desktop icons" off): moves, clicks
-//!   and the wheel over the bare desktop are sent to the page as `desk-mouse` events, as on Windows;
-//!   over another display, to that display's mirror window (`desk-mouse-<its label>`).
+//!   macOS: off since 1.0.21 (see FORWARD): with "Hide desktop icons" off the icons alone take the
+//!   mouse; with it on the skin covers Finder's icons and takes the mouse itself.
 
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
@@ -18,6 +17,9 @@ use tauri::{AppHandle, Emitter};
 static BIND_BTN: AtomicU32 = AtomicU32::new(0);
 static BIND_MODS: AtomicU32 = AtomicU32::new(0); // 1 ctrl · 2 alt · 4 shift · 8 super
 static CAPTURE: AtomicBool = AtomicBool::new(false);
+/// macOS: send the desktop's mouse to the skin under Finder's icons (off: the icons keep it)
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+const FORWARD: bool = false;
 
 pub fn set_bind(btn: u32, mods: u32) {
     BIND_BTN.store(btn, Ordering::Relaxed);
@@ -226,8 +228,9 @@ mod mac {
     }
 
     fn forward(app: &AppHandle, k: &str, d: i32) {
-        // forwarding only while the skin sits under Finder's icons
-        if !desktop::is_wallpaper() || !desktop::behind_icons() {
+        // Since 1.0.21 the desktop icons shown means the icons alone take the mouse; hidden, the skin
+        // sits over Finder's icons and takes it itself. So nothing is forwarded any more.
+        if !FORWARD || !desktop::is_wallpaper() || !desktop::behind_icons() {
             return;
         }
         let p = NSEvent::mouseLocation();

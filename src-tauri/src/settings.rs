@@ -9,15 +9,20 @@ use winreg::RegKey;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Settings {
-    /// true = behind desktop icons (WorkerW), false = interactive desktop layer
+    /// true = behind desktop icons (WorkerW), false = interactive desktop layer. Always true since
+    /// 1.0.21 (the switch is gone: "Hide desktop icons" decides who takes the mouse)
     #[serde(default)]
     pub wallpaper_mode: bool,
-    /// settings layout version (2 = Wallpaper Engine style placement is the default)
+    /// settings layout version (2 = Wallpaper Engine style placement is the default, 3 = always)
     #[serde(default)]
     pub mode_ver: u8,
-    /// hide all desktop icons (incl. Recycle Bin) while Wallplayer runs; default on
+    /// hide all desktop icons (incl. Recycle Bin) while Wallplayer runs, and the player takes the mouse;
+    /// off: the icons show and only they take the mouse. Default on
     #[serde(default = "yes")]
     pub hide_icons: bool,
+    /// shortcut that shows / hides the desktop icons (not on Linux)
+    #[serde(default = "default_icons_key")]
+    pub icons_key: String,
     #[serde(default)]
     pub spotify_client_id: String,
     #[serde(default)]
@@ -48,6 +53,11 @@ pub fn default_search_key() -> String {
     if cfg!(target_os = "macos") { "Shift+Super+Space".into() } else { "Ctrl+Alt+Space".into() }
 }
 
+/// Show / hide the desktop icons: Ctrl+Alt+D (macOS: Control+Option+D), "D" as in Win+D.
+pub fn default_icons_key() -> String {
+    "Ctrl+Alt+D".into()
+}
+
 /// The default shortcut as this system writes it (tray menu).
 #[cfg(not(windows))]
 pub fn default_key_label() -> &'static str {
@@ -67,13 +77,21 @@ pub fn load(app: &AppHandle) -> Settings {
         .and_then(|p| std::fs::read_to_string(p).ok())
         .and_then(|s| serde_json::from_str::<Settings>(&s).ok())
         .map(|mut s| {
-            if s.mode_ver < 2 {
+            if s.mode_ver < 3 {
                 s.wallpaper_mode = true;
-                s.mode_ver = 2;
+                s.mode_ver = 3;
             }
             s
         })
-        .unwrap_or_else(|| Settings { wallpaper_mode: true, mode_ver: 2, hide_icons: true, search_key: default_search_key(), auto_update: true, ..Default::default() })
+        .unwrap_or_else(|| Settings {
+            wallpaper_mode: true,
+            mode_ver: 3,
+            hide_icons: true,
+            search_key: default_search_key(),
+            icons_key: default_icons_key(),
+            auto_update: true,
+            ..Default::default()
+        })
 }
 
 pub fn save(app: &AppHandle, s: &Settings) {

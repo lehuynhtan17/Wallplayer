@@ -78,7 +78,7 @@ THE PLAYLIST (left)
 YOUR OWN MUSIC (songs on this PC)
 - Click the folder button next to the playlist title → "Add a folder…" and pick a music folder
   (mp3, m4a, flac, wav, ogg…). Or drop folders or songs onto Wallplayer while it is in front
-  (Ctrl + Alt + Space, or with "Behind desktop icons" off).
+  (Ctrl + Alt + Space).
 - Titles, artists and covers are read from the files ("Artist - Title" file names work too). Lyrics and
   the edge light work as usual.
 - Folders are remembered: next time click "Play my music" or "Shuffle". "Remove" forgets a folder.
@@ -152,7 +152,8 @@ Esc or a click outside closes it.
   it at high priority (see "Start with Windows" below).
 - Accounts: see ACCOUNTS above.
 - General: Language (English or Tiếng Việt, also the tray menu; Wallplayer uses Vietnamese when Windows
-  does), Behind desktop icons, Search from anywhere, Updates, Privacy policy, Self-test, Quit.
+  does), Hide desktop icons, Shortcuts (Search from anywhere, Show / hide desktop icons), Updates,
+  Privacy policy, Self-test, Quit.
 
 UPDATES (no installer)
 - Each time it starts, Wallplayer quietly checks GitHub once. When there is a new version, the tray menu
@@ -205,24 +206,30 @@ Wallplayer only shows what you play from Wallplayer. A video in a browser tab (F
 or music you start in another app by yourself is ignored: no cover, no lyrics, no music video, nothing in
 History. Wallplayer never pauses other apps either: both just play.
 
-SHORTCUT
-One global shortcut: "Search from anywhere" (Ctrl + Alt + Space by default) opens the search from any app.
-Change it in Settings → General → Search from anywhere: click the button, then press a new key combination (with
-Ctrl, Alt or Shift, or F1–F24) or the middle / side mouse buttons (with Ctrl, Alt or Shift if you like).
-Esc cancels, Reset goes back to Ctrl + Alt + Space. The left and right mouse buttons cannot be used.
+SHORTCUTS
+Two global shortcuts, from any app:
+- "Search from anywhere" (Ctrl + Alt + Space by default) opens the search.
+- "Show / hide desktop icons" (Ctrl + Alt + D by default) switches "Hide desktop icons" (see below).
+Change them in Settings → General → Shortcuts: click the button, then press a new key combination (with
+Ctrl, Alt or Shift, or F1–F24). Search also takes the middle / side mouse buttons (with Ctrl, Alt or
+Shift if you like). Esc cancels, Reset goes back to the default. The left and right mouse buttons cannot
+be used. On macOS the defaults are ⇧⌘Space and ⌃⌥D; on Linux there is no desktop icons shortcut.
 When Wallplayer is in front: Space play / pause, ← → previous / next, ↑ ↓ volume, H hide the interface,
 L full lyrics, E editor, [ ] lyrics timing, / search.
 
 ON THE DESKTOP (tray icon, right-click)
-- By default (like Wallpaper Engine) Wallplayer lives in the wallpaper layer, behind the desktop icons, so
-  Win + D, Show desktop and Win + M keep it on screen. The mouse still works on empty desktop space:
-  point, click, drag, scroll. Clicking the search field brings Wallplayer forward so you can type; a click
-  outside sends it back. Single-key shortcuts work only while it is in front (Ctrl + Alt + Space).
-- Untick "Behind desktop icons" to make it a normal window at the bottom: it covers the desktop icons and
-  every button takes clicks directly; after Win + D it tries to come forward (less reliable).
-- "Hide desktop icons" (on by default) hides every desktop icon, Recycle Bin included, while Wallplayer
-  runs and gives them back when you quit. (If Wallplayer was ended from Task Manager and the icons are
-  still hidden: start Wallplayer and untick it, or right-click the desktop → View → Show desktop icons.)
+- Like Wallpaper Engine, Wallplayer lives in the wallpaper layer, behind the desktop icons, so Win + D,
+  Show desktop and Win + M keep it on screen. Clicking the search field brings Wallplayer forward so you
+  can type; a click outside sends it back. Single-key shortcuts work only while it is in front
+  (Ctrl + Alt + Space).
+- "Hide desktop icons" (tray menu and Settings → General; Ctrl + Alt + D switches it):
+  · On (the default): every desktop icon, Recycle Bin included, is hidden and the player takes the mouse
+    on the desktop: point, click, drag, scroll.
+  · Off: the icons show and only they take the mouse; the player stays a moving wallpaper behind them
+    (Ctrl + Alt + Space still brings it forward).
+  The icons come back when you quit. (If Wallplayer was ended from Task Manager and the icons are still
+  hidden: start Wallplayer and press Ctrl + Alt + D, or right-click the desktop → View → Show desktop icons.)
+- The old "Behind desktop icons" switch is gone: Wallplayer always sits behind the icons now.
 - "Start with Windows": starts Wallplayer when you sign in (also in Settings → General). It waits for the
   desktop to be ready before going behind the icons. If you move the Wallplayer folder, open Wallplayer once
   from the new place and it points Windows to it.
@@ -273,7 +280,8 @@ What differs from Windows:
   apps (Spotify, a browser) are read through MPRIS; the system volume from PipeWire / PulseAudio; the
   ambient light hears the sound through `parec` or `pw-record`.
 - macOS: Wallplayer sits on the desktop of every Space, under all apps. With "Hide desktop icons" on it
-  covers Finder's icons and takes the mouse (on every display); off, it sits under them. "Open at login" adds a
+  covers Finder's icons and takes the mouse (on every display); off, it sits under them and only the icons
+  take the mouse. ⌃⌥D switches it. "Open at login" adds a
   LaunchAgent (~/Library/LaunchAgents/com.tan.wallplayer.plist). The app is not signed by Apple: the
   first time, right-click Wallplayer.app → Open. Songs you start from Wallplayer in Spotify or Apple
   Music show in the player (macOS asks once whether Wallplayer may control them). The search shortcut is ⇧⌘Space, because

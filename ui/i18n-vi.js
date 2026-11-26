@@ -74,7 +74,10 @@ window.WP_VI = {
     'Checking…': 'Đang kiểm tra…', 'Search from anywhere': 'Tìm nhạc từ mọi nơi', 'Reset': 'Đặt lại', 'Back to Ctrl Alt Space': 'Về Ctrl Alt Space',
     'Press a key or mouse button…': 'Bấm một phím hoặc nút chuột…', 'Self-test (Ctrl+Shift+D)': 'Tự kiểm tra (Ctrl+Shift+D)',
     'Use album-art wallpaper': 'Dùng ảnh bìa làm hình nền',
-    'Behind desktop icons': 'Nằm sau icon desktop', 'Hide desktop icons': 'Ẩn icon desktop', 'Start with Windows': 'Mở cùng Windows',
+    'Behind desktop icons': 'Nằm sau icon desktop', 'Hide desktop icons': 'Ẩn icon desktop', 'Shortcuts': 'Phím tắt',
+    'Show / hide desktop icons': 'Hiện / ẩn icon desktop', 'Press a key…': 'Bấm một phím…', 'Back to Ctrl Alt D': 'Về Ctrl Alt D',
+    'On: the player takes the clicks. Off: the icons show and only they take the clicks': 'Bật: bấm được vào player. Tắt: hiện icon và chỉ bấm được icon',
+    'Desktop icons hidden · the player takes the clicks': 'Đã ẩn icon desktop · bấm được vào player', 'Desktop icons shown · only the icons take the clicks': 'Đã hiện icon desktop · chỉ bấm được icon', 'Start with Windows': 'Mở cùng Windows',
     'Opens by itself when you turn on the PC': 'Tự mở khi bật máy', 'High priority': 'Ưu tiên cao',
     'Opens first when you sign in, before other apps, and loads at high priority': 'Mở đầu tiên khi đăng nhập, trước các app khác, và tải với ưu tiên cao', 'Startup': 'Khởi động',
     'Wallplayer opens first when you sign in': 'Wallplayer sẽ mở đầu tiên khi đăng nhập', 'Wallplayer opens with the other startup apps': 'Wallplayer mở cùng lúc với các app khởi động khác', 'Wallplayer opens when Windows starts': 'Wallplayer sẽ tự mở cùng Windows',
@@ -185,6 +188,7 @@ window.WP_VI = {
   },
   /* texts with a variable part: [pattern, replacement]; a function gets (match, tr) */
   patterns: [
+    [/^Search from anywhere: (.+)$/, 'Tìm nhạc từ mọi nơi: $1'], [/^Show \/ hide desktop icons: (.+)$/, 'Hiện / ẩn icon desktop: $1'], [/^Back to (.+)$/, 'Về $1'],
     [/^Search (.+)$/, 'Tìm trên $1'],
     [/^Open in (.+)$/, 'Mở trên $1'],
     [/^Up next on (.+)$/, 'Tiếp theo trên $1'],

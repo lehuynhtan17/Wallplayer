@@ -1125,7 +1125,7 @@ const S = {
   lyrOn: store.get('lyrOn', true), ambOn: store.get('ambOn', true), dim: store.get('dim', false),
   mvOn: store.get('mvOn', true), shuffle: false,
   level: 0, levelAt: 0, bass: 0, amb: .3,
-  ui: {wallpaper_mode: false, peek: false},
+  ui: {wallpaper_mode: false, hide_icons: true, peek: false},
   acc: null, mvKey: '', tgtA: [255, 255, 255], tgtB: [255, 255, 255],
   repeat: store.get('repeat', 'off'), qLabel: '', lyrSource: '', lyrTr: {}, trCache: {},
   sub: store.get('sub', {l1: 'orig', l2: 'vi'}),
@@ -1694,8 +1694,9 @@ function renderAppPop(){
     body = `<div id="accSlot"></div>`;
   } else {
     body = grp('Language', `<div class="sr"><div class="chips"><button class="chip ${I18N.lang === 'en' ? 'on' : ''}" data-lang="en">English</button><button class="chip ${I18N.lang === 'vi' ? 'on' : ''}" data-lang="vi">Tiếng Việt</button></div></div>`)
-      + (T ? grp('Desktop', row('Start with Windows', tg(!!S.ui.autostart, 'data-sa="autostart"'), 'Opens by itself when you turn on the PC') + row('Behind desktop icons', tg(S.ui.wallpaper_mode, 'data-sa="behind"'), 'Off: an interactive desktop window')) : '')
-      + grp('Search from anywhere', row('Shortcut', `<span class="keys keybind"><button class="kbtn ${S.binding ? 'rec' : ''}" id="bindBtn">${S.binding ? 'Press a key or mouse button…' : keyLabel(S.searchKey)}</button><button class="chip" id="bindReset" title="Back to Ctrl Alt Space">Reset</button></span>`))
+      + (T ? grp('Desktop', row('Start with Windows', tg(!!S.ui.autostart, 'data-sa="autostart"'), 'Opens by itself when you turn on the PC')
+          + (OS !== 'linux' ? row('Hide desktop icons', tg(S.ui.hide_icons !== false, 'data-sa="icons"'), 'On: the player takes the clicks. Off: the icons show and only they take the clicks') : '')) : '')
+      + grp('Shortcuts', row('Search from anywhere', keyRec('search')) + (T && OS !== 'linux' ? row('Show / hide desktop icons', keyRec('icons')) : ''))
       + grp('Updates', row('Check when Wallplayer starts', tg(UP.auto, 'data-t="autoup"')) + `<div class="sr col"><span class="sl"><small id="upNow">${upText()}</small></span><div class="chips" id="upBtns">${upBtns()}</div></div>`)
       + grp('', row('Privacy policy', `<button class="abtn" id="privBtn">Open</button>`) + row('Self-test', `<button class="abtn" id="selfTestBtn">Run (Ctrl+Shift+D)</button>`) + (T ? row('Quit Wallplayer', `<button class="abtn warn" data-sa="quit">Quit</button>`) : ''));
   }
@@ -2628,7 +2629,7 @@ function setTrack(t){
 }
 function pushHistory(t){
   const k = (t.title + '|' + t.artist).toLowerCase(); S.history = [t, ...S.history.filter(h => (h.title + '|' + h.artist).toLowerCase() !== k)].slice(0, 100);
-  store.set('history', S.history.map(h => ({...h, art: h.art && h.art.startsWith('data:') && h.art.length > 200000 ? '' : h.art, lyrics: undefined})));
+  store.set('history', S.history.map(h => ({...h, art: h.art && h.art.startsWith('data:') && h.art.length > 40000 ? '' : h.art, lyrics: undefined})));
 }
 function renderPlay(){
   const pl = isPlaying(); $('#playBtn').innerHTML = pl ? I.pause : I.play; app.classList.toggle('playing', pl);
@@ -2669,8 +2670,9 @@ async function resolveAndPlay(t){
   toast('Not found on ' + platById(plat).name);
 }
 let trackStartAt = 0;   // when the last song was started here
+let playSeq = 0;
 async function playTrack(t, list){
-  trackStartAt = Date.now(); extExpect(null);
+  const seq = ++playSeq; trackStartAt = Date.now(); extExpect(null);
   if (TT.frame && t.source !== 'tiktok') TT.unload();   // music from elsewhere: the TikTok video stops
   if (list){ S.queue = list.slice(); S.qKind = 'queue'; S.mix = null; if (!T && S.queue.length < 6) S.queue = S.queue.concat(DEMO.filter(d => !S.queue.includes(d))) }
   S.qIdx = S.queue.indexOf(t); if (S.qIdx < 0){ S.queue.unshift(t); S.qIdx = 0 }
@@ -2681,7 +2683,8 @@ async function playTrack(t, list){
   }
   if (t.source === 'local'){   // a song on this PC
     YTA.stop(); SCW.stop(); app.classList.remove('clip'); S.src = 'local';
-    if (!t.art) t.art = await localArt(t);
+    if (!t.art){ const a = await localArt(t); if (!t.art) t.art = a }
+    if (seq !== playSeq) return;   // another song was clicked meanwhile: that one plays
     setTrack(t); pushHistory(t); LOC.load(t.play); mvFor(t); return;
   }
   if (!t.play) return resolveAndPlay(t);
@@ -2743,8 +2746,25 @@ function seekTo(sec){
 const LIB = {paths: store.get('musicPaths', []), tracks: [], loaded: false, busy: false};
 const locTrack = r => ({id: r.path, title: r.title, artist: r.artist || 'Unknown artist', album: r.album, art: '', duration: (r.duration_ms || 0) / 1000, source: 'local', play: r.path});
 const hue = str => [...String(str)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+// A cover inside a song file can be several MB (a 3000 px picture). Kept at that size it was copied into
+// every list, sent twice a second to the other displays and the island, and saved with History: clicking a
+// few songs in a row could use up the memory and close Wallplayer. Each cover is now shrunk once (640 px
+// JPEG, ~50–100 KB) and remembered per file.
+const ARTC = new Map();
+async function smallArt(url, max = 640){
+  try {
+    const img = new Image(); img.decoding = 'async'; img.src = url; await img.decode();
+    const w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+    if (k === 1 && url.length < 200000) return url;
+    const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    return cv.toDataURL('image/jpeg', .86);
+  } catch(e){ return url.length < 200000 ? url : '' }
+}
 async function localArt(t){
-  try { const a = await invoke('music_art', {path: t.play}); if (a) return a } catch(e){}
+  if (ARTC.has(t.play)) return ARTC.get(t.play);
+  try { const a = await invoke('music_art', {path: t.play}); const sm = a && await smallArt(a);
+    if (sm){ ARTC.set(t.play, sm); if (ARTC.size > 400) ARTC.delete(ARTC.keys().next().value); return sm } } catch(e){}
   const h = hue(t.album || t.artist || t.title);   // no picture in the file: a cover of its own
   const hex = c => '#' + c.map(v => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
   return makeCover(t.title || 'Untitled', t.artist || '', hex(hsl2rgb(h / 360, .7, .55)), hex(hsl2rgb(((h + 50) % 360) / 360, .6, .22)), ['wave', 'sun', 'pool'][h % 3], h);
@@ -3461,7 +3481,7 @@ async function settingsAct(a){
   else if (a === 'radio'){ S.radioOn = !S.radioOn; store.set('radioOn', S.radioOn); toast(S.radioOn ? 'Keeps playing similar songs when the playlist ends' : 'Stops when the playlist ends'); if (S.radioOn) maybeRadio() }
   else if (a === 'shuf'){ if (S.src === 'system') invoke('media_control', {action: 'shuffle'}).catch(err => toast(String(err))); else { S.shuffle = !S.shuffle; toast(S.shuffle ? 'Shuffle on' : 'Shuffle off') } }
   else if (a === 'autohigh'){ try { S.ui = await invoke('set_autostart_high', {on: !S.ui.autostart_high}); toast(S.ui.autostart_high ? 'Wallplayer opens first when you sign in' : 'Wallplayer opens with the other startup apps') } catch(err){ toast(String(err)) } }
-  else if (a === 'behind'){ try { S.ui = await invoke('set_wallpaper_mode', {on: !S.ui.wallpaper_mode}); toast(S.ui.wallpaper_mode ? 'Behind desktop icons — Ctrl+Alt+Space to search' : 'Interactive desktop mode') } catch(err){ toast(String(err)) } }
+  else if (a === 'icons'){ try { S.ui = await invoke('set_icons_hidden', {on: S.ui.hide_icons === false}); iconsToast(S.ui.hide_icons) } catch(err){ toast(String(err)) } }
   else if (a === 'quit'){ invoke('quit_app'); return }
   else if (a === 'dim'){ S.dim = !S.dim; applyToggles() }
   else if (a === 'lymode') setLyricsMode(!app.classList.contains('lyricsmode'));
@@ -3474,8 +3494,8 @@ $('#appPop').addEventListener('click', e => {
   e.stopPropagation(); if (S.binding) stopBinding(); S.setTab = nb.dataset.tab; renderAppPop(); return }
   const sa = e.target.closest('[data-sa]'); if (sa){ e.stopPropagation(); settingsAct(sa.dataset.sa); return }
   const ed = e.target.closest('[data-edit]'); if (ed){ e.stopPropagation(); closeMenus(); openEditor(ed.dataset.edit); return }
-  if (e.target.closest('#bindBtn')){ e.stopPropagation(); S.binding ? stopBinding() : startBinding(); return }
-  if (e.target.closest('#bindReset')){ e.stopPropagation(); stopBinding(); applySearchKey(window.__WP_DEFAULT_KEY__ || 'Ctrl+Alt+Space'); return }
+  const kb = e.target.closest('[data-bind]'); if (kb){ e.stopPropagation(); S.binding === kb.dataset.bind ? stopBinding() : startBinding(kb.dataset.bind); return }
+  const kr = e.target.closest('[data-bindreset]'); if (kr){ e.stopPropagation(); stopBinding(); applyKey(kr.dataset.bindreset, KEYS[kr.dataset.bindreset].def); return }
   if (e.target.closest('#upCheck')){ e.stopPropagation(); closeMenus(); openUpdates(); return }
   const lg = e.target.closest('[data-lang]');
   if (lg){ e.stopPropagation(); if (lg.dataset.lang === I18N.lang) return; S.look.lang = lg.dataset.lang; store.set('look', S.look);
@@ -3863,21 +3883,31 @@ $('#editSheet').addEventListener('change', e => { if (e.target.dataset.r === 'he
 $('#clock').addEventListener('click', e => { if (!e.target.closest('#clockSvg, #clockTxt') && !app.classList.contains('editing')) return; e.stopPropagation(); openEditor('clock') });
 $('#lyrics2').addEventListener('click', e => { if (!app.classList.contains('editing')) return; e.stopPropagation(); openEditor('lyrics') });
 $('#clock').addEventListener('dblclick', e => e.stopPropagation());
-/* "Search from anywhere": one rebindable key / mouse button (default Ctrl Alt Space) */
-S.searchKey = window.__WP_DEFAULT_KEY__ || 'Ctrl+Alt+Space'; S.binding = false;
+/* Global shortcuts, both rebindable: "Search from anywhere" (a key or a mouse button, default Ctrl Alt Space)
+   and "Show / hide desktop icons" (a key, default Ctrl Alt D) */
+S.searchKey = window.__WP_DEFAULT_KEY__ || 'Ctrl+Alt+Space'; S.iconsKey = window.__WP_ICONS_KEY__ || 'Ctrl+Alt+D'; S.binding = false;
+const KEYS = {
+  search: {def: window.__WP_DEFAULT_KEY__ || 'Ctrl+Alt+Space', get: () => S.searchKey, set: v => { S.searchKey = v }, cmd: 'set_search_key', name: 'Search from anywhere', mouse: true},
+  icons: {def: window.__WP_ICONS_KEY__ || 'Ctrl+Alt+D', get: () => S.iconsKey, set: v => { S.iconsKey = v }, cmd: 'set_icons_key', name: 'Show / hide desktop icons', mouse: false},
+};
+const keyRec = k => `<span class="keys keybind"><button class="kbtn ${S.binding === k ? 'rec' : ''}" data-bind="${k}">${S.binding === k ? (KEYS[k].mouse ? 'Press a key or mouse button…' : 'Press a key…') : keyLabel(KEYS[k].get())}</button>`
+  + `<button class="chip" data-bindreset="${k}" title="Back to ${esc(keyLabel(KEYS[k].def))}">Reset</button></span>`;
+const iconsToast = hidden => toast(hidden ? 'Desktop icons hidden · the player takes the clicks' : 'Desktop icons shown · only the icons take the clicks');
 const keyLabel = k => (k || '').replace(/Mouse:Middle/, 'Middle click').replace(/Mouse:X1/, 'Mouse back button').replace(/Mouse:X2/, 'Mouse forward button').replace(/\+/g, ' + ').replace(/Super/, OS === 'macos' ? '⌘' : OS === 'linux' ? 'Super' : 'Win').replace(/\bKey([A-Z])\b/, '$1').replace(/\bDigit(\d)\b/, '$1')
   .replace(OS === 'macos' ? /\b(Ctrl|Alt|Shift)\b/g : /(?!)/, m => ({Ctrl: '⌃', Alt: '⌥', Shift: '⇧'})[m] || m);
-async function applySearchKey(spec){
-  try { S.searchKey = await invoke('set_search_key', {spec}); toast('Search from anywhere: ' + keyLabel(S.searchKey)) }
+async function applyKey(k, spec){
+  const K = KEYS[k] || KEYS.search;
+  try { K.set(await invoke(K.cmd, {spec})); toast(K.name + ': ' + keyLabel(K.get())) }
   catch(err){ toast("Can't use that one — try another") }
   stopBinding();
 }
-function stopBinding(){ S.binding = false; document.removeEventListener('keydown', bindKey, true); document.removeEventListener('mousedown', bindMouse, true);
-  if (T){ invoke('capture_mouse_bind', {on: false}).catch(() => {}); if (S.bindPeek){ S.bindPeek = false; invoke('peek', {on: false}).catch(() => {}) } } renderAppPop() }
-function startBinding(){
-  S.binding = true; renderAppPop();
+function stopBinding(){ const was = S.binding; S.binding = false; document.removeEventListener('keydown', bindKey, true); document.removeEventListener('mousedown', bindMouse, true);
+  if (T){ if (was === 'search') invoke('capture_mouse_bind', {on: false}).catch(() => {}); if (S.bindPeek){ S.bindPeek = false; invoke('peek', {on: false}).catch(() => {}) } } renderAppPop() }
+function startBinding(k = 'search'){
+  if (S.binding) stopBinding();
+  S.binding = k; renderAppPop();
   document.addEventListener('keydown', bindKey, true); document.addEventListener('mousedown', bindMouse, true);
-  if (T){ invoke('capture_mouse_bind', {on: true}).catch(() => {}); if (!S.ui.peek){ S.bindPeek = true; invoke('peek', {on: true}).catch(() => {}) } }
+  if (T){ if (KEYS[k].mouse) invoke('capture_mouse_bind', {on: true}).catch(() => {}); if (!S.ui.peek){ S.bindPeek = true; invoke('peek', {on: true}).catch(() => {}) } }
 }
 function bindKey(e){
   e.preventDefault(); e.stopPropagation();
@@ -3885,13 +3915,14 @@ function bindKey(e){
   if (e.key === 'Escape'){ stopBinding(); return }
   const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Super'].filter(Boolean);
   if (!mods.length && !/^F\d+$/.test(e.code)){ toast('Hold Ctrl, Alt or Shift together with the key'); return }
-  applySearchKey([...mods, e.code].join('+'));
+  applyKey(S.binding, [...mods, e.code].join('+'));
 }
 function bindMouse(e){
-  if (e.target.closest('#bindBtn') && e.button === 0) return;
+  if (e.target.closest('[data-bind]') && e.button === 0) return;
+  if (!KEYS[S.binding] || !KEYS[S.binding].mouse) return;   // desktop icons: a key only
   const m = {1: 'Middle', 3: 'X1', 4: 'X2'}[e.button]; if (!m) return;   // left / right can't be used
   e.preventDefault(); e.stopPropagation();
-  applySearchKey([e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Super'].filter(Boolean).concat('Mouse:' + m).join('+'));
+  applyKey(S.binding, [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Super'].filter(Boolean).concat('Mouse:' + m).join('+'));
 }
 function setBare(on){ app.classList.toggle('bare', on); closeMenus(); if (on){ closeSearch(); toast(islandWant() ? 'Collapsed — point at the island at the top for the controls' : 'UI hidden — press H or double-click to show') } islandSync() }
 $('#eyeBtn').onclick = e => { e.stopPropagation(); if (app.classList.contains('lyricsmode') || S.hide.flow){ if (S.hide.flow){ S.hide.flow = false; applyHide() } setLyricsMode(false) } else setLyricsMode(true) };
@@ -3993,9 +4024,12 @@ function mirrorSync(force){
   const m = {pos: getPos(), playing: isPlaying(), video, vt: video ? P.time() : 0, vpl: video ? P.playing() : false, clip, at: Date.now(),
     dur: getDur(), lo: (S.lyrOff || 0) + (S.lyrOffAll || 0), acc: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), islLyr: S.look.islLyr !== false, dim: !!S.dim};
   const tk = t ? t.title + '|' + t.artist + '|' + (t.art || '').length : '';
-  if (force || tk !== MIR.tk){ MIR.tk = tk; m.track = t ? {...t, lyrics: undefined} : null; m.hasTrack = true }
+  const lite = x => ({...x, lyrics: undefined, art: x.art && x.art.startsWith('data:') && x.art.length > 300000 ? '' : x.art});   // no picture over ~220 KB
+  if (force || tk !== MIR.tk){ MIR.tk = tk; m.track = t ? lite(t) : null; m.hasTrack = true }
   const list = queueList(), qk = list.length + '|' + list.slice(0, 30).map(x => x.title).join('|') + '|' + (t ? t.title : '');
-  if (force || qk !== MIR.qk){ MIR.qk = qk; m.queue = list.slice(0, 30).map(x => ({...x, lyrics: undefined})); m.qIdx = list.findIndex(isCurrent) }
+  if (force || qk !== MIR.qk){ MIR.qk = qk; const ci = list.findIndex(isCurrent);
+    // song files' covers only for the songs around the one playing (what the cover flow there shows)
+    m.queue = list.slice(0, 30).map((x, k) => { const y = lite(x); if (y.art && y.art.startsWith('data:') && Math.abs(k - ci) > 8) y.art = ''; return y }); m.qIdx = ci }
   if (force || m.hasTrack || S.lyrSeq !== MIR.lk){ MIR.lk = S.lyrSeq; m.lyr = S.lyr; m.lyrSrc = S.lyrSource }
   // TikTok: the other displays show the same video (muted), its details and the next ones
   if (TT.on){
@@ -4115,8 +4149,10 @@ async function boot(){
     if (LIB.paths.length) invoke('music_allow', {paths: LIB.paths}).catch(() => {});
     listen('tauri://drag-enter', () => app.classList.add('drag')); listen('tauri://drag-leave', () => app.classList.remove('drag'));
     listen('tauri://drag-drop', e => { app.classList.remove('drag'); const ps = (e.payload && e.payload.paths) || []; if (ps.length) dropPaths(ps) });
-    listen('bind-captured', e => { if (S.binding) applySearchKey(e.payload) });
+    listen('bind-captured', e => { if (S.binding === 'search') applyKey('search', e.payload) });
+    listen('icons-changed', e => iconsToast(e.payload));
     invoke('get_search_key').then(k => { S.searchKey = k; if ($('#appPop').classList.contains('open')) renderAppPop() }).catch(() => {});
+    invoke('get_icons_key').then(k => { S.iconsKey = k; if ($('#appPop').classList.contains('open')) renderAppPop() }).catch(() => {});
     listen('desk-mouse', e => deskMouse(e.payload));
     listen('peek-ended', () => app.classList.remove('searching'));
     listen('mode-changed', e => { S.ui = e.payload });

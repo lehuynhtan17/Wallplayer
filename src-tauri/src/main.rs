@@ -58,6 +58,7 @@ pub(crate) struct AppState {
     peek: Mutex<bool>,
     hwnd: Mutex<isize>,
     wall_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    icons_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     auto_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     pub(crate) update_item: Mutex<Option<MenuItem<tauri::Wry>>>,
     /// tray menu items whose text follows the interface language: (id, set_text)
@@ -68,6 +69,8 @@ pub(crate) struct AppState {
 #[derive(Serialize, Clone)]
 struct UiState {
     wallpaper_mode: bool,
+    /// desktop icons hidden: the player takes the mouse (shown: only the icons do)
+    hide_icons: bool,
     autostart: bool,
     /// "Start with Windows" → "High priority" (the sign-in task)
     autostart_high: bool,
@@ -76,9 +79,12 @@ struct UiState {
 
 fn ui_state(app: &AppHandle) -> UiState {
     let st = app.state::<AppState>();
-    let wallpaper_mode = st.settings.lock().unwrap().wallpaper_mode;
+    let (wallpaper_mode, hide_icons) = {
+        let s = st.settings.lock().unwrap();
+        (s.wallpaper_mode, s.hide_icons)
+    };
     let peek = *st.peek.lock().unwrap();
-    UiState { wallpaper_mode, autostart: settings::autostart_enabled(), autostart_high: boot::high_on(), peek }
+    UiState { wallpaper_mode, hide_icons, autostart: settings::autostart_enabled(), autostart_high: boot::high_on(), peek }
 }
 
 /// Apply the wanted placement (peek > wallpaper > desktop).
@@ -137,6 +143,41 @@ fn set_wallpaper_mode_inner(app: &AppHandle, on: bool) {
         }
     }
     apply_mode(app);
+}
+
+/// "Hide desktop icons": on, the icons are hidden and the player takes the mouse; off, the icons show
+/// and only they take the mouse (the player stays a moving wallpaper). Linux: the skin always covers
+/// the file manager's icons, so this does nothing there.
+fn set_icons_hidden_inner(app: &AppHandle, on: bool) {
+    {
+        let st = app.state::<AppState>();
+        let mut s = st.settings.lock().unwrap();
+        s.hide_icons = on;
+        settings::save(app, &s);
+        let item = st.icons_item.lock().unwrap().clone();
+        if let Some(item) = item {
+            let _ = item.set_checked(on);
+        }
+    }
+    desktop::set_icons_hidden(on);
+    let _ = app.emit("mode-changed", ui_state(app));
+}
+
+fn toggle_icons(app: &AppHandle) {
+    if cfg!(target_os = "linux") {
+        return;
+    }
+    let on = !app.state::<AppState>().settings.lock().unwrap().hide_icons;
+    set_icons_hidden_inner(app, on);
+    let _ = app.emit("icons-changed", on);
+}
+
+#[tauri::command]
+fn set_icons_hidden(app: AppHandle, on: bool) -> UiState {
+    if !cfg!(target_os = "linux") {
+        set_icons_hidden_inner(&app, on);
+    }
+    ui_state(&app)
 }
 
 pub(crate) fn end_peek(app: &AppHandle) {
@@ -741,8 +782,58 @@ fn quit_app(app: AppHandle) {
 // ───────────────────────── "Search from anywhere" binding ─────────────────────────
 
 /// Register the binding: a keyboard shortcut (global-shortcut plugin) or a mouse button (low-level hook).
+/// The two global shortcuts now registered: search, and show / hide the desktop icons.
+static SEARCH_SC: Mutex<Option<Shortcut>> = Mutex::new(None);
+static ICONS_SC: Mutex<Option<Shortcut>> = Mutex::new(None);
+
+fn is_icons_key(sc: &Shortcut) -> bool {
+    ICONS_SC.lock().unwrap_or_else(|e| e.into_inner()).as_ref().is_some_and(|i| i.id() == sc.id())
+}
+
+/// Show / hide the desktop icons with a key ("Ctrl+Alt+D"…; "" = none). Not on Linux.
+fn apply_icons_key(app: &AppHandle, spec: &str) -> Result<(), String> {
+    if let Some(old) = ICONS_SC.lock().unwrap_or_else(|e| e.into_inner()).take() {
+        let _ = app.global_shortcut().unregister(old);
+    }
+    let spec = spec.trim();
+    if spec.is_empty() || cfg!(target_os = "linux") {
+        return Ok(());
+    }
+    if spec.contains("Mouse:") {
+        return Err("use a key here".into());
+    }
+    let sc: Shortcut = spec.parse().map_err(|e| format!("{e}"))?;
+    if SEARCH_SC.lock().unwrap_or_else(|e| e.into_inner()).as_ref().is_some_and(|s| s.id() == sc.id()) {
+        return Err("that is the search shortcut".into());
+    }
+    app.global_shortcut().register(sc).map_err(|e| e.to_string())?;
+    *ICONS_SC.lock().unwrap_or_else(|e| e.into_inner()) = Some(sc);
+    Ok(())
+}
+
+#[tauri::command]
+fn get_icons_key(app: AppHandle) -> String {
+    app.state::<AppState>().settings.lock().unwrap().icons_key.clone()
+}
+
+#[tauri::command]
+fn set_icons_key(app: AppHandle, spec: String) -> Result<String, String> {
+    if let Err(e) = apply_icons_key(&app, &spec) {
+        let old = get_icons_key(app.clone());
+        let _ = apply_icons_key(&app, &old);
+        return Err(e);
+    }
+    let st = app.state::<AppState>();
+    let mut s = st.settings.lock().unwrap();
+    s.icons_key = spec.clone();
+    settings::save(&app, &s);
+    Ok(spec)
+}
+
 fn apply_search_key(app: &AppHandle, spec: &str) -> Result<(), String> {
-    let _ = app.global_shortcut().unregister_all();
+    if let Some(old) = SEARCH_SC.lock().unwrap_or_else(|e| e.into_inner()).take() {
+        let _ = app.global_shortcut().unregister(old);
+    }
     deskmouse::set_bind(0, 0);
     let spec = spec.trim();
     if let Some(i) = spec.find("Mouse:") {
@@ -766,7 +857,12 @@ fn apply_search_key(app: &AppHandle, spec: &str) -> Result<(), String> {
         return Ok(());
     }
     let sc: Shortcut = spec.parse().map_err(|e| format!("{e}"))?;
-    app.global_shortcut().register(sc).map_err(|e| e.to_string())
+    if is_icons_key(&sc) {
+        return Err("that is the desktop icons shortcut".into());
+    }
+    app.global_shortcut().register(sc).map_err(|e| e.to_string())?;
+    *SEARCH_SC.lock().unwrap_or_else(|e| e.into_inner()) = Some(sc);
+    Ok(())
 }
 
 #[tauri::command]
@@ -797,6 +893,7 @@ fn capture_mouse_bind(on: bool) {
 // ───────────────────────── main ─────────────────────────
 
 fn main() {
+    guard::panic_hook();
     update::wait_for_previous();   // started by "Restart to update": let the old one exit first
     desktop::set_app_id();
 
@@ -805,17 +902,22 @@ fn main() {
         .plugin(
             tauri::plugin::Builder::<tauri::Wry>::new("wp-os")
                 .js_init_script(format!(
-                    "window.__WP_OS__ = '{OS}'; window.__WP_DEFAULT_KEY__ = '{}';",
-                    settings::default_search_key()
+                    "window.__WP_OS__ = '{OS}'; window.__WP_DEFAULT_KEY__ = '{}'; window.__WP_ICONS_KEY__ = '{}';",
+                    settings::default_search_key(),
+                    settings::default_icons_key()
                 ))
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(move |app, _sc, ev| {
+                .with_handler(move |app, sc, ev| {
                     if ev.state() == ShortcutState::Pressed {
-                        open_search(app);
+                        if is_icons_key(sc) {
+                            toggle_icons(app);
+                        } else {
+                            open_search(app);
+                        }
                     }
                 })
                 .build(),
@@ -825,6 +927,7 @@ fn main() {
             peek: Mutex::new(false),
             hwnd: Mutex::new(0),
             wall_item: Mutex::new(None),
+            icons_item: Mutex::new(None),
             auto_item: Mutex::new(None),
             update_item: Mutex::new(None),
             tray_texts: Mutex::new(Vec::new()),
@@ -833,6 +936,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_state,
             set_wallpaper_mode,
+            set_icons_hidden,
+            get_icons_key,
+            set_icons_key,
             set_autostart,
             set_autostart_high,
             save_playlist,
@@ -908,7 +1014,6 @@ fn main() {
 
             // settings
             let s = settings::load(&handle);
-            let wall_on = s.wallpaper_mode;
             let hide_on = s.hide_icons;
             desktop::set_target(&s.monitor);
             *app.state::<AppState>().settings.lock().unwrap() = s;
@@ -994,7 +1099,6 @@ fn main() {
 
             // tray
             let search_i = MenuItem::with_id(app, "search", tray_label("search"), true, None::<&str>)?;
-            let wall_i = CheckMenuItem::with_id(app, "wallpaper", "Behind desktop icons", true, wall_on, None::<&str>)?;
             let auto_i = CheckMenuItem::with_id(
                 app,
                 "autostart",
@@ -1013,11 +1117,11 @@ fn main() {
             let sep = PredefinedMenuItem::separator(app)?;
             // Linux: the skin always covers the file manager's desktop icons, so that switch has no use there
             #[cfg(not(target_os = "linux"))]
-            let menu = Menu::with_items(app, &[&search_i, &wall_i, &icons_i, &display_i, &mirror_i, &auto_i, &sep, &update_i, &reload_i, &quit_i])?;
+            let menu = Menu::with_items(app, &[&search_i, &icons_i, &display_i, &mirror_i, &auto_i, &sep, &update_i, &reload_i, &quit_i])?;
             #[cfg(target_os = "linux")]
-            let menu = Menu::with_items(app, &[&search_i, &wall_i, &display_i, &mirror_i, &auto_i, &sep, &update_i, &reload_i, &quit_i])?;
+            let menu = Menu::with_items(app, &[&search_i, &display_i, &mirror_i, &auto_i, &sep, &update_i, &reload_i, &quit_i])?;
             let mirror_c = mirror_i.clone();
-            *app.state::<AppState>().wall_item.lock().unwrap() = Some(wall_i.clone());
+            *app.state::<AppState>().icons_item.lock().unwrap() = Some(icons_i.clone());
             *app.state::<AppState>().auto_item.lock().unwrap() = Some(auto_i.clone());
             *app.state::<AppState>().update_item.lock().unwrap() = Some(update_i.clone());
             {
@@ -1032,7 +1136,6 @@ fn main() {
                     }};
                 }
                 keep!("search", search_i);
-                keep!("wallpaper", wall_i);
                 keep!("icons", icons_i);
                 keep!("display", display_i);
                 keep!("mirror", mirror_i);
@@ -1042,7 +1145,6 @@ fn main() {
             }
 
             let auto_c = auto_i.clone();
-            let icons_c = icons_i.clone();
             let mut tray = TrayIconBuilder::with_id("wallplayer")
                 .tooltip("Wallplayer")
                 .menu(&menu)
@@ -1053,10 +1155,6 @@ fn main() {
                     "update" => {
                         set_peek(app, true);
                         let _ = app.emit_to("main", "update-check-request", ());
-                    }
-                    "wallpaper" => {
-                        let on = !app.state::<AppState>().settings.lock().unwrap().wallpaper_mode;
-                        set_wallpaper_mode_inner(app, on);
                     }
                     "autostart" => {
                         let on = !settings::autostart_enabled();
@@ -1089,15 +1187,8 @@ fn main() {
                     }
                     "quit" => quit(app),
                     "icons" => {
-                        let on = {
-                            let st = app.state::<AppState>();
-                            let mut s = st.settings.lock().unwrap();
-                            s.hide_icons = !s.hide_icons;
-                            settings::save(app, &s);
-                            s.hide_icons
-                        };
-                        desktop::set_icons_hidden(on);
-                        let _ = icons_c.set_checked(on);
+                        let on = !app.state::<AppState>().settings.lock().unwrap().hide_icons;
+                        set_icons_hidden_inner(app, on);
                     }
                     _ => {}
                 })
@@ -1121,6 +1212,10 @@ fn main() {
             if let Err(e) = apply_search_key(&handle, &key) {
                 eprintln!("hotkey: {e}");
                 let _ = apply_search_key(&handle, &settings::default_search_key());
+            }
+            let ikey = app.state::<AppState>().settings.lock().unwrap().icons_key.clone();
+            if let Err(e) = apply_icons_key(&handle, &ikey) {
+                guard::log(&handle, &format!("desktop icons shortcut {ikey}: {e}"));
             }
 
             // companion windows on the other monitors; re-check when monitors come and go

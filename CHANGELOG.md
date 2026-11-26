@@ -3,6 +3,18 @@
 Each section is the release notes of one version. The release workflow publishes
 the section that matches the version in `src-tauri/Cargo.toml`.
 
+## 1.0.21
+
+### Changed
+- One switch for the desktop icons: "Hide desktop icons" (tray menu and Settings → General). On, the default: the icons are hidden and the player takes the mouse, as before. Off: the icons show and only they take the mouse; the player stays a moving wallpaper behind them. The "Behind desktop icons" switch is gone: Wallplayer always sits behind the icons now.
+
+### New
+- A shortcut to show / hide the desktop icons from any app: Ctrl + Alt + D (macOS: ⌃⌥D), changeable in Settings → General → Shortcuts. Not on Linux, where Wallplayer always covers the file manager's icons.
+
+### Fixed
+- Wallplayer could close when you clicked a few songs on your PC one after another. The covers inside song files (often several MB each) were copied whole into every list and sent twice a second to the other displays and the island, up to hundreds of MB in a few seconds. Each cover is now shrunk once (640 px), only the songs around the one playing send theirs, and the song you clicked last is the one that plays.
+- A fault in one background task (reading a song file, a web request) no longer closes the whole app; it is written to wallplayer.log.
+
 ## 1.0.20
 
 ### New
